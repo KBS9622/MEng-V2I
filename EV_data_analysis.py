@@ -85,7 +85,7 @@ def regen_braking(data):
 
     # calculate the energy being stored back to the battery whenever the car decelerates
     data['P_regen'] = data['P_electric_motor']
-    data['P_regen'] *= data['n_rb'] # calculate the energy being stored back to the battery whenever the car decelerates
+    data['P_regen'] *= data['n_rb'] 
 
     # add the energy consumption when the car accelerates
     pos_energy_consumption = data['P_electric_motor']
