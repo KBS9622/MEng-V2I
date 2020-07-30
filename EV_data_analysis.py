@@ -62,9 +62,6 @@ def calculate_energy_consumption(data):
     # Power at electric motor 
     data['P_electric_motor'] = data['P_wheels'] / (n_driveline * n_electric_motor)
 
-    data.plot(x='timestamp', y='P_electric_motor')
-    plt.savefig('energy_consumption.png')
-
     return data
 
 def regen_braking(data):
@@ -85,20 +82,28 @@ def regen_braking(data):
 
     # calculate the energy being stored back to the battery whenever the car decelerates
     data['P_regen'] = data['P_electric_motor']
-    data['P_regen'] *= data['n_rb'] 
+    data['P_regen'] *= data['n_rb']
 
     # add the energy consumption when the car accelerates
     pos_energy_consumption = data['P_electric_motor']
     pos_energy_consumption.where(data['accel_mps2']>=0, other=0, inplace = True)
     data['P_regen'] += pos_energy_consumption
 
-    data.plot(x='timestamp', y='P_regen')
-    plt.savefig('energy_consumption_with_regen.png')
-
-    data.plot(x='timestamp', y='n_rb')
-    plt.savefig('n_rb.png')
-
     return data
+
+def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png'):
+    """
+    Plots a graph according to the specified x and y, and saves it to the specified file name
+
+    :param data: data in DataFrame
+    :param x: the name of the column for the x axis
+    :param y: the name(s) of the column for the y axis
+    :param file_name: the file name(s) to store the plot(s)
+    """
+
+    for col, name in zip(y, file_name):
+        data.plot(x=x, y=col)
+        plt.savefig(name)
 
 
 file = '2012-05-22.csv'
@@ -111,8 +116,6 @@ sliced_data = calculate_energy_consumption(data.loc[1:593])
 
 regen_sliced_data = regen_braking(sliced_data)
 
-sliced_data.plot(x='timestamp', y='speed_mps')
-plt.savefig('speed_profile.png')
-
-# file = 'OBD2_combined_data.csv'
-
+y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
+file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
+graph_plotter(regen_sliced_data, y=y, file_name=file_name)
