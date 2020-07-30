@@ -28,7 +28,7 @@ def calculate_energy_consumption(data):
     Calculates the energy consumption trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with three new columns: speed in m/s, acceleration in m/s^2 and power at wheels in W
+    :return: data in DataFrame with four new columns: speed in m/s, acceleration in m/s^2, power at wheels in W and power at electric motor in W
     """
 
     m = 1521 # mass (kg)
@@ -66,8 +66,31 @@ def calculate_energy_consumption(data):
 
     return data
 
-# def regen_braking():
+def regen_braking(data):
+    """
+    Calculates the energy consumption (with regenerative braking efficiency included) trend and plots it against time
 
+    :param data: data in DataFrame
+    :return: data in DataFrame with two new columns: regenerative braking efficiency and power at electric motor adjusted with n_rb
+    """
+
+    alpha = 0.0411
+    
+    data['n_rb'] = (np.exp(alpha / abs(data['accel_mps2']) ) )**-1
+    data['n_rb'].where(data['accel_mps2'] < 0, other = 0, inplace = True) #regenerative braking efficiency is ZERO when acceleration >= 0
+
+    data['P_regen'] = data['P_electric_motor']
+    for x in data['P_regen']:
+        if x < 0:
+            x *= data['n_rb']
+
+    data.plot(x='timestamp', y='P_regen')
+    plt.savefig('energy_consumption_with_regen.png')
+
+    # data.plot(x='timestamp', y='n_rb')
+    # plt.savefig('n_rb.png')
+
+    return data
 
 
 file = '2012-05-22.csv'
@@ -77,6 +100,8 @@ data = load_csv_data(file, subdir)
 data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
 sliced_data = calculate_energy_consumption(data.loc[1:593])
+
+regen_sliced_data = regen_braking(sliced_data)
 
 sliced_data.plot(x='timestamp', y='speed_mps')
 plt.savefig('speed_profile.png')
