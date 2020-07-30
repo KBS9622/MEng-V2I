@@ -49,12 +49,19 @@ def calculate_energy_consumption(data):
     data['speed_mps'] = mph_to_mps * data['speed_mph']
     data['accel_mps2'] = mph_to_mps * data['accel_meters_ps']
 
+    # Power required at the wheels
     data['P_wheels'] = (m * data['accel_mps2'] \
                        + m * g * np.cos(theta) * C_r * 1e-3 * (c_1 * data['speed_mps'] + c_2) \
                        + 0.5 * rho_air * A_f * C_D * (data['speed_mps']**2) \
                        + m * g * np.sin(theta)) * data['speed_mps']
 
-    data.plot(x='timestamp', y='P_wheels')
+    n_driveline = 0.92 # driveline efficiency
+    n_electric_motor = 0.91 # electric motor efficiency (85%-95% for Nissan Leaf)
+
+    # Power at electric motor 
+    data['P_electric_motor'] = data['P_wheels'] / (n_driveline * n_electric_motor)
+
+    data.plot(x='timestamp', y='P_electric_motor')
     plt.savefig('energy_consumption.png')
 
     return data
