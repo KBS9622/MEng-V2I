@@ -28,7 +28,8 @@ def calculate_energy_consumption(data):
     Calculates the energy consumption trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with four new columns: speed in m/s, acceleration in m/s^2, power at wheels in W and power at electric motor in W
+    :return: data in DataFrame with four new columns: speed in m/s, acceleration in m/s^2,
+             power at wheels in W and power at electric motor in W
     """
 
     m = 1521 # mass (kg)
@@ -68,27 +69,34 @@ def calculate_energy_consumption(data):
 
 def regen_braking(data):
     """
-    Calculates the energy consumption (with regenerative braking efficiency included) trend and plots it against time
+    Calculates the energy consumption (with regenerative braking efficiency included)
+    trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with two new columns: regenerative braking efficiency and power at electric motor adjusted with n_rb
+    :return: data in DataFrame with two new columns: regenerative braking efficiency
+                                                     and power at electric motor adjusted with n_rb
     """
 
     alpha = 0.0411
-    
-    data['n_rb'] = (np.exp(alpha / abs(data['accel_mps2']) ) )**-1
-    data['n_rb'].where(data['accel_mps2'] < 0, other = 0, inplace = True) #regenerative braking efficiency is ZERO when acceleration >= 0
 
+    # regenerative braking efficiency is ZERO when acceleration >= 0
+    data['n_rb'] = (np.exp(alpha / abs(data['accel_mps2']) ) )**-1
+    data['n_rb'].where(data['accel_mps2'] < 0, other = 0, inplace = True)
+
+    # calculate the energy being stored back to the battery whenever the car decelerates
     data['P_regen'] = data['P_electric_motor']
-    for x in data['P_regen']:
-        if x < 0:
-            x *= data['n_rb']
+    data['P_regen'] *= data['n_rb'] # calculate the energy being stored back to the battery whenever the car decelerates
+
+    # add the energy consumption when the car accelerates
+    pos_energy_consumption = data['P_electric_motor']
+    pos_energy_consumption.where(data['accel_mps2']>=0, other=0, inplace = True)
+    data['P_regen'] += pos_energy_consumption
 
     data.plot(x='timestamp', y='P_regen')
     plt.savefig('energy_consumption_with_regen.png')
 
-    # data.plot(x='timestamp', y='n_rb')
-    # plt.savefig('n_rb.png')
+    data.plot(x='timestamp', y='n_rb')
+    plt.savefig('n_rb.png')
 
     return data
 
