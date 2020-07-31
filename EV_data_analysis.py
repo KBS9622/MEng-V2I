@@ -23,7 +23,25 @@ def load_csv_data(file_name, subdir=''):
 
     return df
 
-def calculate_energy_consumption(data):
+def EV_menu():
+    """
+    Menu for selection of EV to be used in system
+
+    :param data: -
+    :return: dataframe containing parameters for selected EV
+    """
+
+    file = 'EV_characteristics.csv'
+    EV_selection = load_csv_data(file)
+
+    print('****** EV SELECTION MENU ******')
+    print(EV_selection['vehicle_model'])
+    choice = input("""Please key in the number corresponding to the vehicle model : """)
+    EV = EV_selection.iloc[int(choice)]
+
+    return EV
+
+def calculate_energy_consumption(data, EV):
     """
     Calculates the energy consumption trend and plots it against time
 
@@ -32,18 +50,18 @@ def calculate_energy_consumption(data):
              power at wheels in W and power at electric motor in W
     """
 
-    m = 1521 # mass (kg)
+    m = EV['m_kg'] # mass (kg)
     g = 9.8066 # gravity (m/s)
     theta = 0 # road grade
 
     #rolling resistance parameters
-    C_r = 1.75
-    c_1 = 0.0328
-    c_2 = 4.575
+    C_r = EV['C_r']
+    c_1 = EV['c_1']
+    c_2 = EV['c_2']
 
-    rho_air = 1.2256 # air mass density (kg/m3)
-    A_f = 2.3316 # frontal area of the vehicle (m2)
-    C_D = 0.28 # aerodynamic drag coefficient of the vehicle
+    rho_air = EV['rho_air'] # air mass density (kg/m3)
+    A_f = EV['A_f'] # frontal area of the vehicle (m2)
+    C_D = EV['C_D'] # aerodynamic drag coefficient of the vehicle
 
     mph_to_mps = 0.44704
 
@@ -56,8 +74,8 @@ def calculate_energy_consumption(data):
                        + 0.5 * rho_air * A_f * C_D * (data['speed_mps']**2) \
                        + m * g * np.sin(theta)) * data['speed_mps']
 
-    n_driveline = 0.92 # driveline efficiency
-    n_electric_motor = 0.91 # electric motor efficiency (85%-95% for Nissan Leaf)
+    n_driveline = EV['n_driveline'] # driveline efficiency
+    n_electric_motor = EV['n_electric_motor'] # electric motor efficiency (85%-95% for Nissan Leaf)
 
     # Power at electric motor 
     data['P_electric_motor'] = data['P_wheels'] / (n_driveline * n_electric_motor)
@@ -106,13 +124,15 @@ def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumptio
         plt.savefig(name)
 
 
+EV_chosen = EV_menu()
+
 file = '2012-05-22.csv'
 subdir = '1035198_1'
 data = load_csv_data(file, subdir)
 
 data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
-sliced_data = calculate_energy_consumption(data.loc[1:593])
+sliced_data = calculate_energy_consumption(data.loc[1:593], EV_chosen)
 
 regen_sliced_data = regen_braking(sliced_data)
 
