@@ -28,7 +28,8 @@ def calculate_energy_consumption(data):
     Calculates the energy consumption trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with three new columns: speed in m/s, acceleration in m/s^2 and power at wheels in W
+    :return: data in DataFrame with four new columns: speed in m/s, acceleration in m/s^2,
+             power at wheels in W and power at electric motor in W
     """
 
     m = 1521 # mass (kg)
@@ -49,15 +50,60 @@ def calculate_energy_consumption(data):
     data['speed_mps'] = mph_to_mps * data['speed_mph']
     data['accel_mps2'] = mph_to_mps * data['accel_meters_ps']
 
-    data['P_wheels'] = m * data['accel_mps2'] \
+    # Power required at the wheels
+    data['P_wheels'] = (m * data['accel_mps2'] \
                        + m * g * np.cos(theta) * C_r * 1e-3 * (c_1 * data['speed_mps'] + c_2) \
                        + 0.5 * rho_air * A_f * C_D * (data['speed_mps']**2) \
-                       + m * g * np.sin(theta)
+                       + m * g * np.sin(theta)) * data['speed_mps']
 
-    data.plot(x='timestamp', y='P_wheels')
-    plt.savefig('energy_consumption.png')
+    n_driveline = 0.92 # driveline efficiency
+    n_electric_motor = 0.91 # electric motor efficiency (85%-95% for Nissan Leaf)
+
+    # Power at electric motor 
+    data['P_electric_motor'] = data['P_wheels'] / (n_driveline * n_electric_motor)
 
     return data
+
+def regen_braking(data):
+    """
+    Calculates the energy consumption (with regenerative braking efficiency included)
+    trend and plots it against time
+
+    :param data: data in DataFrame
+    :return: data in DataFrame with two new columns: regenerative braking efficiency
+                                                     and power at electric motor adjusted with n_rb
+    """
+
+    alpha = 0.0411
+
+    # regenerative braking efficiency is ZERO when acceleration >= 0
+    data['n_rb'] = (np.exp(alpha / abs(data['accel_mps2']) ) )**-1
+    data['n_rb'].where(data['accel_mps2'] < 0, other = 0, inplace = True)
+
+    # calculate the energy being stored back to the battery whenever the car decelerates
+    data['P_regen'] = data['P_electric_motor']
+    data['P_regen'] *= data['n_rb']
+
+    # add the energy consumption when the car accelerates
+    pos_energy_consumption = data['P_electric_motor'].copy()
+    pos_energy_consumption.where(data['accel_mps2']>=0, other=0, inplace = True)
+    data['P_regen'] += pos_energy_consumption
+
+    return data
+
+def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png'):
+    """
+    Plots a graph according to the specified x and y, and saves it to the specified file name
+
+    :param data: data in DataFrame
+    :param x: the name of the column for the x axis
+    :param y: the name(s) of the column for the y axis
+    :param file_name: the file name(s) to store the plot(s)
+    """
+
+    for col, name in zip(y, file_name):
+        data.plot(x=x, y=col)
+        plt.savefig(name)
 
 
 file = '2012-05-22.csv'
@@ -68,8 +114,11 @@ data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S'
 
 sliced_data = calculate_energy_consumption(data.loc[1:593])
 
-sliced_data.plot(x='timestamp', y='speed_mps')
-plt.savefig('speed_profile.png')
+regen_sliced_data = regen_braking(sliced_data)
 
-# file = 'OBD2_combined_data.csv'
+y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
+file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
+graph_plotter(regen_sliced_data, y=y, file_name=file_name)
 
+print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
+print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
