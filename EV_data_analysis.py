@@ -91,7 +91,8 @@ def regen_braking(data):
 
     return data
 
-def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png'):
+def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png',
+                  subdir='test', date='test'):
     """
     Plots a graph according to the specified x and y, and saves it to the specified file name
 
@@ -100,10 +101,15 @@ def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumptio
     :param y: the name(s) of the column for the y axis
     :param file_name: the file name(s) to store the plot(s)
     """
+    figure_folder = 'EV_figures'
+    directory = figure_folder+'/'+subdir+'/'+date # directory to store the figures
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     for col, name in zip(y, file_name):
         data.plot(x=x, y=col)
-        plt.savefig(name)
+        plt.savefig(directory+'/'+name)
 
 
 file = '2012-05-22.csv'
@@ -118,7 +124,7 @@ regen_sliced_data = regen_braking(sliced_data)
 
 y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
 file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
-graph_plotter(regen_sliced_data, y=y, file_name=file_name)
+graph_plotter(regen_sliced_data, y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
 
 print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
 print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
