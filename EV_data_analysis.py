@@ -119,3 +119,6 @@ regen_sliced_data = regen_braking(sliced_data)
 y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
 file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
 graph_plotter(regen_sliced_data, y=y, file_name=file_name)
+
+print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
+print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
