@@ -85,7 +85,7 @@ def regen_braking(data):
     data['P_regen'] *= data['n_rb']
 
     # add the energy consumption when the car accelerates
-    pos_energy_consumption = data['P_electric_motor']
+    pos_energy_consumption = data['P_electric_motor'].copy()
     pos_energy_consumption.where(data['accel_mps2']>=0, other=0, inplace = True)
     data['P_regen'] += pos_energy_consumption
 
