@@ -33,11 +33,13 @@ def EV_menu():
 
     file = 'EV_characteristics.csv'
     EV_selection = load_csv_data(file)
-
-    print('****** EV SELECTION MENU ******')
-    print(EV_selection['vehicle_model'])
-    choice = input("""Please key in the number corresponding to the vehicle model : """)
-    EV = EV_selection.iloc[int(choice)]
+    print(len(EV_selection))
+    choice = -1
+    while (choice < 0) or (choice >= len(EV_selection)):
+        print('****** EV SELECTION MENU ******')
+        print(EV_selection['vehicle_model'])
+        choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+    EV = EV_selection.iloc[choice]
 
     return EV
 
