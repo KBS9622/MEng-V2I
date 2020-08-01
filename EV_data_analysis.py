@@ -46,9 +46,11 @@ def calculate_energy_consumption(data, EV):
     Calculates the energy consumption trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with four new columns: speed in m/s, acceleration in m/s^2,
+    :return: data in DataFrame with 5 new columns: vehicle model, speed in m/s, acceleration in m/s^2,
              power at wheels in W and power at electric motor in W
     """
+
+    data.insert(0,'vehicle_model',EV['vehicle_model']) 
 
     m = EV['m_kg'] # mass (kg)
     g = 9.8066 # gravity (m/s)
@@ -120,7 +122,8 @@ def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumptio
     :param file_name: the file name(s) to store the plot(s)
     """
     figure_folder = 'EV_figures'
-    directory = figure_folder+'/'+subdir+'/'+date # directory to store the figures
+    EV_model = data.iloc[0]['vehicle_model']
+    directory = figure_folder+'/'+subdir+'/'+EV_model+'/'+date # directory to store the figures
 
     if not os.path.exists(directory):
         os.makedirs(directory)
