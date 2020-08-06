@@ -23,42 +23,119 @@ def load_csv_data(file_name, subdir=''):
 
     return df
 
-def calculate_energy_consumption(data):
+def EV_menu():
+    """
+    Menu for selection of EV to be used in system
+
+    :param data: -
+    :return: dataframe containing parameters for selected EV
+    """
+
+    file = 'EV_characteristics.csv'
+    EV_selection = load_csv_data(file)
+    print(len(EV_selection))
+    choice = -1
+    while (choice < 0) or (choice >= len(EV_selection)):
+        print('****** EV SELECTION MENU ******')
+        print(EV_selection['vehicle_model'])
+        choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+    EV = EV_selection.iloc[choice]
+
+    return EV
+
+def calculate_energy_consumption(data, EV):
     """
     Calculates the energy consumption trend and plots it against time
 
     :param data: data in DataFrame
-    :return: data in DataFrame with three new columns: speed in m/s, acceleration in m/s^2 and power at wheels in W
+    :return: data in DataFrame with 5 new columns: vehicle model, speed in m/s, acceleration in m/s^2,
+             power at wheels in W and power at electric motor in W
     """
 
-    m = 1521 # mass (kg)
+    data.insert(0,'vehicle_model',EV['vehicle_model']) 
+
+    m = EV['m_kg'] # mass (kg)
     g = 9.8066 # gravity (m/s)
     theta = 0 # road grade
 
     #rolling resistance parameters
-    C_r = 1.75
-    c_1 = 0.0328
-    c_2 = 4.575
+    C_r = EV['C_r']
+    c_1 = EV['c_1']
+    c_2 = EV['c_2']
 
-    rho_air = 1.2256 # air mass density (kg/m3)
-    A_f = 2.3316 # frontal area of the vehicle (m2)
-    C_D = 0.28 # aerodynamic drag coefficient of the vehicle
+    rho_air = EV['rho_air'] # air mass density (kg/m3)
+    A_f = EV['A_f'] # frontal area of the vehicle (m2)
+    C_D = EV['C_D'] # aerodynamic drag coefficient of the vehicle
 
     mph_to_mps = 0.44704
 
     data['speed_mps'] = mph_to_mps * data['speed_mph']
     data['accel_mps2'] = mph_to_mps * data['accel_meters_ps']
 
-    data['P_wheels'] = m * data['accel_mps2'] \
+    # Power required at the wheels
+    data['P_wheels'] = (m * data['accel_mps2'] \
                        + m * g * np.cos(theta) * C_r * 1e-3 * (c_1 * data['speed_mps'] + c_2) \
                        + 0.5 * rho_air * A_f * C_D * (data['speed_mps']**2) \
-                       + m * g * np.sin(theta)
+                       + m * g * np.sin(theta)) * data['speed_mps']
 
-    data.plot(x='timestamp', y='P_wheels')
-    plt.savefig('energy_consumption.png')
+    n_driveline = EV['n_driveline'] # driveline efficiency
+    n_electric_motor = EV['n_electric_motor'] # electric motor efficiency (85%-95% for Nissan Leaf)
+
+    # Power at electric motor 
+    data['P_electric_motor'] = data['P_wheels'] / (n_driveline * n_electric_motor)
 
     return data
 
+def regen_braking(data):
+    """
+    Calculates the energy consumption (with regenerative braking efficiency included)
+    trend and plots it against time
+
+    :param data: data in DataFrame
+    :return: data in DataFrame with two new columns: regenerative braking efficiency
+                                                     and power at electric motor adjusted with n_rb
+    """
+
+    alpha = 0.0411
+
+    # regenerative braking efficiency is ZERO when acceleration >= 0
+    data['n_rb'] = (np.exp(alpha / abs(data['accel_mps2']) ) )**-1
+    data['n_rb'].where(data['accel_mps2'] < 0, other = 0, inplace = True)
+
+    # calculate the energy being stored back to the battery whenever the car decelerates
+    data['P_regen'] = data['P_electric_motor']
+    data['P_regen'] *= data['n_rb']
+
+    # add the energy consumption when the car accelerates
+    pos_energy_consumption = data['P_electric_motor'].copy()
+    pos_energy_consumption.where(data['accel_mps2']>=0, other=0, inplace = True)
+    data['P_regen'] += pos_energy_consumption
+
+    return data
+
+def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png',
+                  subdir='test', date='test'):
+    """
+    Plots a graph according to the specified x and y, and saves it to the specified file name
+
+    :param data: data in DataFrame
+    :param x: the name of the column for the x axis
+    :param y: the name(s) of the column for the y axis
+    :param file_name: the file name(s) to store the plot(s)
+    """
+    figure_folder = 'EV_figures'
+    EV_model = data.iloc[0]['vehicle_model']
+    directory = figure_folder+'/'+subdir+'/'+EV_model+'/'+date # directory to store the figures
+
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    for col, name in zip(y, file_name):
+        data.plot(x=x, y=col)
+        plt.savefig(directory+'/'+name)
+
+
+EV_chosen = EV_menu()
 
 file = '2012-05-22.csv'
 subdir = '1035198_1'
@@ -66,10 +143,13 @@ data = load_csv_data(file, subdir)
 
 data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
-sliced_data = calculate_energy_consumption(data.loc[1:593])
+sliced_data = calculate_energy_consumption(data.loc[1:593], EV_chosen)
 
-sliced_data.plot(x='timestamp', y='speed_mps')
-plt.savefig('speed_profile.png')
+regen_sliced_data = regen_braking(sliced_data)
 
-# file = 'OBD2_combined_data.csv'
+y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
+file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
+graph_plotter(regen_sliced_data, y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
 
+print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
+print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
