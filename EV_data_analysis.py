@@ -25,9 +25,9 @@ class EV():
     n_driveline = None # driveline efficiency
     n_electric_motor = None # electric motor efficiency (85%-95% for Nissan Leaf)
 
-    capacity = 20000 #In Wh
-    charge_lvl = 10000 #In Wh
-    soc = (charge_lvl/capacity) * 100 #State of charge of the battery in %
+    capacity = None #In Wh
+    charge_lvl = None #In Wh
+    soc = None #State of charge of the battery in %
 
     data = None
 
@@ -53,14 +53,15 @@ class EV():
         self.capacity = EV['capacity']
         self.charge_lvl = self.capacity * (50/100) #battery is 50% charged initially
 
-    def charge(self,power): 
+    def charge(self,power_in_joules): 
         """
         Method to charge EV battery
 
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
-
+        Wh_to_J = 3600
+        power = power_in_joules / Wh_to_J #convert joules to Wh
         if (self.capacity-self.charge_lvl) >= power:
             self.charge_lvl += power
         else:
@@ -68,15 +69,17 @@ class EV():
             self.excess += temp
             print('Battery is full, {} Wh of excess energy'.format(temp))
             self.charge_lvl = self.capacity
+        self.soc = (self.charge_lvl/self.capacity) * 100
 
-    def discharge(self,power): 
+    def discharge(self,power_in_joules): 
         """
         Method to discharge EV battery
 
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
-
+        Wh_to_J = 3600
+        power = power_in_joules / Wh_to_J #convert joules to Wh
         if self.charge_lvl == 0:
             self.deficit += power
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(power))
@@ -87,6 +90,7 @@ class EV():
             self.charge_lvl = 0
         else:
             self.charge_lvl -= power
+        self.soc = (self.charge_lvl/self.capacity) * 100
 
 
     def load_csv_data(self, file_name, subdir=''):
@@ -181,6 +185,18 @@ class EV():
 
         return
 
+    def soc_over_time(self):
+        timeseries_soc = []
+        timeseries_charge_lvl = []
+        for x in self.data['P_regen']:
+            self.discharge(x)
+            timeseries_soc.append(self.soc)
+            timeseries_charge_lvl.append(self.charge_lvl)
+        print(timeseries_soc)
+        print(timeseries_charge_lvl)
+        self.data['soc'] = timeseries_soc
+        print(self.data)
+
     def graph_plotter(self, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png',
                     subdir='test', date='test'):
         """
@@ -211,10 +227,13 @@ data = EV_object.load_csv_data(file, subdir)
 data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
 
 sliced_data = EV_object.calculate_energy_consumption(data.loc[1:593])
+EV_object.soc_over_time()
 
-y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
-file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
+y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc']
+file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png', 'soc.png']
 EV_object.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
 
 print(sum(sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
 print(sum(sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
+
+
