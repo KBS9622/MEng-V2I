@@ -136,12 +136,23 @@ class EV():
 
         file = 'EV_characteristics.csv'
         EV_selection = self.load_csv_data(file)
-        choice = -1
-        while (choice < 0) or (choice >= len(EV_selection)):
+        choice = None
+        while True:
             print('****** EV SELECTION MENU ******')
             print(EV_selection['vehicle_model'])
-            choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+
+            try:
+                choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+            except ValueError:
+                print('Invalid input.')
+                continue
+
+            if not choice in range(0,len(EV_selection)):
+                print('Invalid input.')
+                continue
+            break
         EV = EV_selection.iloc[choice]
+
 
         return EV
 
