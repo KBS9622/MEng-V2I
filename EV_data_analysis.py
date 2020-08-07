@@ -55,41 +55,54 @@ class EV():
 
     def charge(self,power_in_joules): 
         """
-        Method to charge EV battery
+        Method to charge EV battery, accounting for battery efficiency
 
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
+        #maximum SOC to ensure safe operation
+        max_soc = 95 # in %
+        max_charge_lvl = (max_soc/100) * self.capacity
+
+        n_battery = 90 #battery efficiency
         Wh_to_J = 3600
-        power = power_in_joules / Wh_to_J #convert joules to Wh
-        if (self.capacity-self.charge_lvl) >= power:
+        power = (power_in_joules / Wh_to_J) / (n_battery / 100) #convert joules to Wh
+
+        if (max_charge_lvl - self.charge_lvl) >= power:
             self.charge_lvl += power
         else:
-            temp = self.charge_lvl+power-self.capacity
+            temp = self.charge_lvl+power-max_charge_lvl
             self.excess += temp
             print('Battery is full, {} Wh of excess energy'.format(temp))
-            self.charge_lvl = self.capacity
+            self.charge_lvl = max_charge_lvl
+
+        # calculates the new instantaneous SOC
         self.soc = (self.charge_lvl/self.capacity) * 100
 
     def discharge(self,power_in_joules): 
         """
-        Method to discharge EV battery
+        Method to discharge EV battery, accounting for battery efficiency
 
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
+        #minimum SOC to ensure safe operation
+        min_soc = 20
+        min_charge_lvl = (min_soc/100) * self.charge_lvl
+
+        n_battery = 90 #battery efficiency
         Wh_to_J = 3600
-        power = power_in_joules / Wh_to_J #convert joules to Wh
-        if self.charge_lvl == 0:
-            self.deficit += power
-            print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(power))
-        elif power > self.charge_lvl:
-            temp = power-self.charge_lvl
+        power = (power_in_joules / Wh_to_J) / (n_battery / 100) #convert joules to Wh
+        
+        if power > (self.charge_lvl - min_charge_lvl):
+            temp = power - (self.charge_lvl - min_charge_lvl)
             self.deficit += temp
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(temp))
-            self.charge_lvl = 0
+            self.charge_lvl = min_charge_lvl
         else:
             self.charge_lvl -= power
+
+        # calculates the new instantaneous SOC
         self.soc = (self.charge_lvl/self.capacity) * 100
 
 
@@ -161,12 +174,13 @@ class EV():
 
     def regen_braking(self):
         """
-        Calculates the energy consumption (with regenerative braking efficiency included)
+        Calculates the energy consumption (with regenerative braking efficiency and auxiliary loads included)
         trend and plots it against time
 
         :param data: data in DataFrame
-        :return: data in DataFrame with two new columns: regenerative braking efficiency
-                                                        and power at electric motor adjusted with n_rb
+        :return: data in DataFrame with 3 new columns: regenerative braking efficiency,
+                                                        power at electric motor adjusted with n_rb
+                                                        and total power consumed including auxiliary loads
         """
         alpha = 0.0411
 
@@ -183,19 +197,28 @@ class EV():
         pos_energy_consumption.where(self.data['accel_mps2']>=0, other=0, inplace = True)
         self.data['P_regen'] += pos_energy_consumption
 
+        # add the energy consumption of auxiliary loads
+        auxiliary = 700 # Watts or Joules per second
+        self.data['P_total'] = self.data['P_regen'] + auxiliary
+
         return
 
     def soc_over_time(self):
+        """
+        Calculates the SOC and charge level of the vehicle over time
+
+        :param data: -
+        :return: data in DataFrame with 2 new columns: SOC of EV over time
+                                                        and charge level of EV over time
+        """
         timeseries_soc = []
         timeseries_charge_lvl = []
-        for x in self.data['P_regen']:
+        for x in self.data['P_total']:
             self.discharge(x)
             timeseries_soc.append(self.soc)
             timeseries_charge_lvl.append(self.charge_lvl)
-        print(timeseries_soc)
-        print(timeseries_charge_lvl)
         self.data['soc'] = timeseries_soc
-        print(self.data)
+        self.data['charge_lvl'] = timeseries_charge_lvl
 
     def graph_plotter(self, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png',
                     subdir='test', date='test'):
@@ -229,11 +252,11 @@ data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S'
 sliced_data = EV_object.calculate_energy_consumption(data.loc[1:593])
 EV_object.soc_over_time()
 
-y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc']
-file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png', 'soc.png']
+y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc', 'P_total']
+file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png', 'soc.png', 'total_energy_conumption.png']
 EV_object.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
 
-print(sum(sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
+print(sum(sliced_data['P_total'])) #calculate the final energy consumption, accounting for RB efficiency and auxiliary loads
 print(sum(sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
 
 
