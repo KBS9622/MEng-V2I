@@ -135,21 +135,21 @@ def graph_plotter(data, x='timestamp', y='P_regen', file_name='energy_consumptio
         plt.savefig(directory+'/'+name)
 
 
-EV_chosen = EV_menu()
-
-file = '2012-05-22.csv'
-subdir = '1035198_1'
-data = load_csv_data(file, subdir)
-
-data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
-
-sliced_data = calculate_energy_consumption(data.loc[1:593], EV_chosen)
-
-regen_sliced_data = regen_braking(sliced_data)
-
-y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
-file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
-graph_plotter(regen_sliced_data, y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
-
-print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
-print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
+# EV_chosen = EV_menu()
+#
+# file = '2012-05-22.csv'
+# subdir = '1035198_1'
+# data = load_csv_data(file, subdir)
+#
+# data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
+#
+# sliced_data = calculate_energy_consumption(data.loc[1:593], EV_chosen)
+#
+# regen_sliced_data = regen_braking(sliced_data)
+#
+# y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb']
+# file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png']
+# graph_plotter(regen_sliced_data, y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
+#
+# print(sum(regen_sliced_data['P_regen'])) #calculate the final energy consumption, accounting for RB efficiency
+# print(sum(regen_sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)

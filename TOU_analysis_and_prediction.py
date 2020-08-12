@@ -78,7 +78,7 @@ class TOU(object):
 
         mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
                                         order=(1, 1, 1),
-                                        seasonal_order=(1, 1, 0, 12),
+                                        seasonal_order=(1, 1, 0, 52),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
         results = mod.fit()
