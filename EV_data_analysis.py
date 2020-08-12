@@ -32,12 +32,6 @@ class EV():
     data = None
 
     def __init__(self):
-        """
-        Initialised parameters for selected EV
-
-        :param data: -
-        :return: initialised parameters
-        """
         EV = self.EV_menu()
 
         self.EV_model = EV['vehicle_model']
@@ -57,9 +51,10 @@ class EV():
         """
         Method to charge EV battery, accounting for battery efficiency
 
-        :param data: power (because data is measured every second)
+        :param power_in_joules: power (because data is measured every second)
         :return: new SOC for the EV object
         """
+
         #maximum SOC to ensure safe operation
         max_soc = 95 # in %
         max_charge_lvl = (max_soc/100) * self.capacity
@@ -86,6 +81,7 @@ class EV():
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
+
         #minimum SOC to ensure safe operation
         min_soc = 20
         min_charge_lvl = (min_soc/100) * self.charge_lvl
@@ -130,7 +126,6 @@ class EV():
         """
         Menu for selection of EV to be used in system
 
-        :param data: -
         :return: dataframe containing parameters for selected EV
         """
 
@@ -143,16 +138,11 @@ class EV():
 
             try:
                 choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+                EV = EV_selection.iloc[choice]
             except ValueError:
-                print('Invalid input.')
-                continue
-
-            if not choice in range(0,len(EV_selection)):
-                print('Invalid input.')
+                print('Invalid input')
                 continue
             break
-        EV = EV_selection.iloc[choice]
-
 
         return EV
 
