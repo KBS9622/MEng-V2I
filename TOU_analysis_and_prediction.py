@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import statsmodels.api as sm
 from statsmodels.tsa.statespace import sarimax
+from pandas.tseries.offsets import DateOffset
 
 class TOU(object):
 
@@ -78,7 +79,7 @@ class TOU(object):
 
         mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
                                         order=(1, 1, 1),
-                                        seasonal_order=(1, 1, 0, 12),
+                                        seasonal_order=(1, 1, 0, 52),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
         results = mod.fit()
@@ -98,10 +99,13 @@ class TOU(object):
 
         fitted_model = sarimax.SARIMAXResultsWrapper.load(fitted_model_filename)
 
-        pred = fitted_model.get_prediction(start=start, end=end, dynamic=False)
+        pred = fitted_model.predict(start=start + DateOffset(minutes=30),
+                                           end=end + DateOffset(minutes=30), dynamic=False)
+        pred = pred.to_frame(name='TOU')
+        pred = pred.set_index(pred.index - DateOffset(minutes=30))
 
         ax = self.time_idx_TOU_price[start:end].plot(label='actual')
-        pred.predicted_mean.plot(ax=ax, label='predicted', figsize=(10, 5))
+        pred.plot(ax=ax, label='predicted', figsize=(10, 5))
         plt.legend()
 
         if start.strftime('%Y-%m-%d') == end.strftime('%Y-%m-%d'):

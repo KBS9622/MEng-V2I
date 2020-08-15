@@ -202,8 +202,6 @@ class EV():
         auxiliary = 700 # Watts or Joules per second
         self.data['P_total'] = self.data['P_regen'] + auxiliary
 
-        return
-
     def soc_over_time(self):
         """
         Calculates the SOC and charge level of the vehicle over time
@@ -240,24 +238,3 @@ class EV():
         for col, name in zip(y, file_name):
             self.data.plot(x=x, y=col)
             plt.savefig(directory+'/'+name)
-
-
-EV_object = EV()
-
-file = '2012-05-22.csv'
-subdir = '1035198_1'
-data = EV_object.load_csv_data(file, subdir)
-
-data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
-
-sliced_data = EV_object.calculate_energy_consumption(data.loc[1:593])
-EV_object.soc_over_time()
-
-y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc', 'P_total']
-file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png', 'n_rb.png', 'soc.png', 'total_energy_conumption.png']
-EV_object.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
-
-print(sum(sliced_data['P_total'])) #calculate the final energy consumption, accounting for RB efficiency and auxiliary loads
-print(sum(sliced_data['P_electric_motor'])) #calculate the final energy consumption, NOT accounting for RB efficiency (therefore should be smaller)
-
-
