@@ -6,8 +6,12 @@ from pandas.tseries.offsets import DateOffset
 
 EV_obj = EV()
 
-file = '2012-05-22.csv'
-subdir = '1035198_1'
+# file = '2012-05-22.csv'
+# subdir = '1035198_1'
+
+file = '2012-03-01.csv'
+subdir = '1119055_1'
+
 data = EV_obj.load_csv_data(file, subdir)
 
 data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
