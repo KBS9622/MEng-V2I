@@ -36,6 +36,7 @@ P_total = P_total.set_index('timestamp')
 file = 'agile_rates_2019.xlsx'
 TOU_obj = TOU(file)
 
+# uncomment the line below if you're running for the first time
 # results = TOU_obj.create_and_fit_model()
 
 start_time = pd.to_datetime('2019-01-31 00:00:00')
