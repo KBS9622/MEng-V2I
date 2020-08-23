@@ -55,7 +55,7 @@ class charging_recommendation(object):
 
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
-                break
+                return None
 
             remainder += sum(free_time_slots.iloc[list(range(0, quotient))]['charging'])
             idx_offset = 0
