@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-class EV():
+class EV(object):
     
     excess = None
     deficit = None
