@@ -92,7 +92,7 @@ class TOU_tests(unittest.TestCase):
         file_name = 'test_agile_rates_2019.xlsx'
         TOU_obj = TOU(file_name)
 
-        df = TOU_obj.load_xlsx_data()
+        df = TOU_obj.load_xlsx_data(file_name)
 
         expected_df = self.setup_load_xlsx_data_expected_df()
 
@@ -101,10 +101,10 @@ class TOU_tests(unittest.TestCase):
     def test_load_xlsx_data_with_subdir(self):
 
         file_name = 'test_agile_rates_2019.xlsx'
-        TOU_obj = TOU(file_name)
-
         subdir = 'test_files'
-        df = TOU_obj.load_xlsx_data(subdir)
+        TOU_obj = TOU(file_name, subdir)
+
+        df = TOU_obj.load_xlsx_data(file_name, subdir)
 
         expected_df = self.setup_load_xlsx_data_expected_df()
 
