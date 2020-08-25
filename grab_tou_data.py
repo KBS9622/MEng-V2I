@@ -4,9 +4,9 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.common.by import By
 import pandas as pd
-import os
 import requests
 import csv
+
 
 class GrabTOUData:
     def __init__(self):
@@ -53,7 +53,7 @@ class GrabTOUData:
 
     def download_today_tomorrow_csv(self):
         response = requests.get('https://www.energy-stats.uk/wp-content/historic-data/csv_agileoutgoing_C_London.csv')
-        with open('./TOU_Data/out.csv', 'w') as file:
+        with open('./TOU_Data/full_data.csv', 'w') as file:
             writer = csv.writer(file)
             for line in response.iter_lines():
                 writer.writerow(line.decode('utf-8').split(','))
