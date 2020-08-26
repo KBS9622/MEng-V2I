@@ -30,7 +30,7 @@ class EV_tests(unittest.TestCase):
 
         return df
 
-    def setuo_format_EV_data_expected_df(self):
+    def setup_format_EV_data_expected_df(self):
 
         df = self.setup_load_csv_data_expected_df()
 
@@ -153,7 +153,7 @@ class EV_tests(unittest.TestCase):
 
         df = EV_obj.format_EV_data()
 
-        expected_df = self.setuo_format_EV_data_expected_df()
+        expected_df = self.setup_format_EV_data_expected_df()
 
         assert_frame_equal(df, expected_df)
 
