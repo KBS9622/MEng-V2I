@@ -47,9 +47,11 @@ class charging_recommendation(object):
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])
             charge_time = journey_energy_consumption / (charger_power * 60)
 
-            quotient = int(charge_time // 30)
-            remainder = charge_time % 30
+            #number of time slots needed to charge EV
+            quotient = int(charge_time // 30) 
+            remainder = charge_time % 30 
 
+            # --------- and sorting TOU by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
 
