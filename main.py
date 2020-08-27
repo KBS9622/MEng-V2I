@@ -4,15 +4,14 @@ from TOU_analysis_and_prediction import TOU
 from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
 
-EV_obj = EV()
+file = '2012-03-01.csv'
+subdir = '1119055_1'
 
-file = '2012-05-22.csv'
-subdir = '1035198_1'
-data = EV_obj.load_csv_data(file, subdir)
+# file = '2012-05-22.csv'
+# subdir = '1035198_1'
 
-data['timestamp'] = pd.to_datetime(data['timestamp'], format='%Y-%m-%d %H:%M:%S')
+EV_obj = EV(file, subdir)
 
-data = EV_obj.calculate_energy_consumption(data)
 EV_obj.soc_over_time()
 
 y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc', 'P_total']
@@ -23,7 +22,7 @@ EV_obj.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file.strip('.
 cols_to_drop = ['cycle_sec', 'timestep', 'speed_mph', 'accel_meters_ps', 'speed_mps',
                  'accel_mps2', 'P_wheels', 'P_electric_motor', 'n_rb', 'P_regen']
 
-P_total = data.copy()
+P_total = EV_obj.data.copy()
 P_total = P_total.drop(columns=cols_to_drop)
 P_total = P_total.set_index('timestamp')
 
@@ -32,6 +31,7 @@ P_total = P_total.set_index('timestamp')
 file = 'agile_rates_2019.xlsx'
 TOU_obj = TOU(file)
 
+# uncomment the line below if you're running for the first time
 # results = TOU_obj.create_and_fit_model()
 
 start_time = pd.to_datetime('2019-01-31 00:00:00')

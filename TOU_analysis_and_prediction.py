@@ -7,13 +7,14 @@ from pandas.tseries.offsets import DateOffset
 
 class TOU(object):
 
-    def __init__(self, file_name):
+    def __init__(self, file_name, subdir=''):
 
         self.file_name = file_name
+        self.subdir = subdir
         self.data = self.format_TOU_data()
         self.time_idx_TOU_price = self.create_time_idx_TOU_price()
 
-    def load_xlsx_data(self, subdir=''):
+    def load_xlsx_data(self, file_name, subdir=''):
         """
         Loads data from .xlsx file in to DataFrame
 
@@ -25,7 +26,7 @@ class TOU(object):
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
                 for name in files:
-                    if name == self.file_name:
+                    if name == file_name:
                         file_path = os.path.join(root, name)
 
         df = pd.read_excel(file_path)
@@ -39,7 +40,7 @@ class TOU(object):
         :return: formatted and stripped DataFrame
         """
 
-        df = self.load_xlsx_data()
+        df = self.load_xlsx_data(self.file_name, self.subdir)
 
         cols_to_drop = ['code', 'gsp', 'region_name']
         df = df.drop(columns=cols_to_drop)
