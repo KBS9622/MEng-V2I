@@ -21,7 +21,7 @@ class charging_recommendation(object):
             time_diff = P_total_data.iloc[i + 1, :].name - P_total_data.iloc[i, :].name
             if time_diff >= min_gap:
                 journey_start.append(P_total_data.iloc[i + 1, :].name)
-                journey_end.insert(0, P_total_data.iloc[i, :].name)
+                journey_end.insert(len(journey_end)-1, P_total_data.iloc[i, :].name)
 
         return journey_start, journey_end
 
