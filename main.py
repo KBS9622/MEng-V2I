@@ -43,7 +43,8 @@ P_total = P_total.set_index(P_total.index
 pred = TOU_obj.predict_and_compare(start_time, end_time)
 
 ##########################################################################################
-
+print(pred)
 charging_recom_obj = charging_recommendation(P_total, pred)
 
-print(charging_recom_obj.recommend())
+threshold = 12
+print(charging_recom_obj.recommend(threshold))

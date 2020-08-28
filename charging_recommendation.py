@@ -25,7 +25,7 @@ class charging_recommendation(object):
 
         return journey_start, journey_end
 
-    def recommend(self, charger_power=6.6e3):
+    def recommend(self, threshold, charger_power=6.6e3):
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -82,8 +82,13 @@ class charging_recommendation(object):
             # fully fill the very first cheapest slots
             if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
 
+        #TOU threshold charging
+        print(free_time_slots['TOU']<=threshold)
+        # pred.loc[free_time_slots['TOU'] <= threshold, 'charging'] = 30
+
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']
         self.EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
+
