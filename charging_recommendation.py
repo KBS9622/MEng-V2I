@@ -25,7 +25,7 @@ class charging_recommendation(object):
 
         return journey_start, journey_end
 
-    def recommend(self, threshold, charger_power=6.6e3):
+    def recommend(self, threshold=0, charger_power=6.6e3):
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -83,7 +83,6 @@ class charging_recommendation(object):
             if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
 
         #TOU threshold charging
-        print(pred['TOU']<=threshold)
         pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
 
         # subtract journey time from charging time
