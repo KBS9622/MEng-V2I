@@ -65,8 +65,9 @@ class charging_recommendation(object):
                 print('Not enough time slots to charge')
                 return None
 
-            # fill in slots based on the remainder with the quotient as offset
+            # fill in slots based on the quotient and remainder
             remainder += sum(free_time_slots.iloc[list(range(0, quotient))]['charging'])
+            if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
             idx_offset = 0
             while remainder != 0:
                 remainder += free_time_slots.iloc[quotient + idx_offset]['charging']
@@ -78,9 +79,6 @@ class charging_recommendation(object):
                     remainder = 0
 
                 idx_offset += 1
-
-            # fully fill the very first cheapest slots
-            if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
 
         # TOU threshold charging
         pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
