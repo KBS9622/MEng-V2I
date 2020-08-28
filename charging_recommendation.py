@@ -83,8 +83,8 @@ class charging_recommendation(object):
             if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
 
         #TOU threshold charging
-        print(free_time_slots['TOU']<=threshold)
-        # pred.loc[free_time_slots['TOU'] <= threshold, 'charging'] = 30
+        print(pred['TOU']<=threshold)
+        pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
 
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']

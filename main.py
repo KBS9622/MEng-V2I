@@ -46,5 +46,5 @@ pred = TOU_obj.predict_and_compare(start_time, end_time)
 print(pred)
 charging_recom_obj = charging_recommendation(P_total, pred)
 
-threshold = 12
+threshold = 10
 print(charging_recom_obj.recommend(threshold))
