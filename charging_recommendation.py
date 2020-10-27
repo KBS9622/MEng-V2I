@@ -10,6 +10,12 @@ class charging_recommendation(object):
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points()
 
     def find_journey_start_and_end_points(self, min_gap=30):
+        """
+        Method to indetify sub-journey start/end times (Classifier Module)
+
+        :param data: min_gap (minimum time gap to identify as two seperate sub-journey)
+        :return: journey_start varible (with sub-journey start times) and journey_end variable (with corresponding sub-journey end times)
+        """
 
         P_total_data = self.EV_data.copy()
         min_gap = pd.Timedelta(min_gap*60, unit='sec')
@@ -26,6 +32,12 @@ class charging_recommendation(object):
         return journey_start, journey_end
 
     def recommend(self, threshold=0, charger_power=3e3):
+        """
+        Method to recommend charging times (Scheduler Module)
+
+        :param data: threshold (user-defined/system defined TOU threshold) and charger_power
+        :return: recommmended charging slots
+        """
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0

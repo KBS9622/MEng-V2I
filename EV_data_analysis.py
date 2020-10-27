@@ -173,7 +173,7 @@ class EV(object):
         """
         Method to charge EV battery, accounting for battery efficiency
 
-        :param power_in_joules: power (because data is measured every second)
+        :param data: power_in_joules [power (because data is measured every second)]
         :return: new SOC for the EV object
         """
 
