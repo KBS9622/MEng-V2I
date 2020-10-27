@@ -25,7 +25,7 @@ class charging_recommendation(object):
 
         return journey_start, journey_end
 
-    def recommend(self, threshold=0, charger_power=6.6e3):
+    def recommend(self, threshold=0, charger_power=3e3):
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0

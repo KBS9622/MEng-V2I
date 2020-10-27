@@ -141,13 +141,13 @@ class EV(object):
 
     def regen_braking(self):
         """
-        Calculates the energy consumption (with regenerative braking efficiency and auxiliary loads included)
+        Calculates the energy consumption (with regenerative braking efficiency, auxiliary loads and model error included)
         trend and plots it against time
 
         :param data: data in DataFrame
         :return: data in DataFrame with 3 new columns: regenerative braking efficiency,
                                                         power at electric motor adjusted with n_rb
-                                                        and total power consumed including auxiliary loads
+                                                        and total power consumed including auxiliary loads and model error
         """
         alpha = 0.0411
 
@@ -164,9 +164,10 @@ class EV(object):
         pos_energy_consumption.where(self.data['accel_mps2']>=0, other=0, inplace = True)
         self.data['P_regen'] += pos_energy_consumption
 
-        # add the energy consumption of auxiliary loads
+        # add the energy consumption of auxiliary loads and model error
         auxiliary = 700 # Watts or Joules per second
-        self.data['P_total'] = self.data['P_regen'] + auxiliary
+        average_model_error = -5.9 #percent
+        self.data['P_total'] = (self.data['P_regen'] + auxiliary)*(100 + average_model_error)/100
 
     def charge(self, power_in_joules):
         """

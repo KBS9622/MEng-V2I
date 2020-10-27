@@ -44,6 +44,8 @@ pred = TOU_obj.predict_and_compare(start_time, end_time)
 
 ##########################################################################################
 
+#just runs the recommendation system that hasn't considered EV SOC
+
 charging_recom_obj = charging_recommendation(P_total, pred)
 
 threshold = 0
