@@ -3,8 +3,9 @@ import numpy as np
 
 class charging_recommendation(object):
 
-    def __init__(self, EV_data, TOU_data):
+    def __init__(self, initial_charge, EV_data, TOU_data):
 
+        self.available_charge = initial_charge
         self.EV_data = EV_data
         self.TOU_data = TOU_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points()
@@ -62,6 +63,7 @@ class charging_recommendation(object):
 
             # calculate total charging time for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])
+            # -> this is where the SOC consideration takes place (Boon)
             charge_time = journey_energy_consumption / (charger_power * 60)
 
             # calculate number of time slots needed to charge EV
