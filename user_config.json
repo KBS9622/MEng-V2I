@@ -2,7 +2,7 @@
     "User_ID" : "00000001",
 
     "_comment" : "EV given parameters",
-    "SOC" : "",
+    "SOC" : "50",
     "Charge_level" : "",
 
     "_comment2" : "User defined parameter",

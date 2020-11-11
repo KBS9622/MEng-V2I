@@ -41,11 +41,17 @@ class charging_recommendation(object):
         :param data: JSON containing configuration parameters
         :return: recommmended charging slots
         """
+        # **** maybe before the system runs the scheduler, it should use API to request up to date info from EV, like SOC and charge level
         # open the json file and load the object into a python dictionary
         with open(config_path) as f:
             config_dict = json.load(f)
         threshold = config_dict['TOU_threshold']
         charger_power = config_dict['Charger_power']
+        lower_buffer = config_dict['Lower_buffer']
+        upper_buffer = config_dict['Upper_buffer']
+        emergency_reserves = config_dict['Emergency_reserves']
+        home_location = config_dict['Home_location']
+        manual_override = config_dict['Manual_override']
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -70,7 +76,9 @@ class charging_recommendation(object):
 
             # calculate total charging time for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])
+
             # -> this is where the SOC consideration takes place (Boon)
+            
             charge_time = journey_energy_consumption / (charger_power * 60)
 
             # calculate number of time slots needed to charge EV
