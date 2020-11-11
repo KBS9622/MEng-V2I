@@ -41,6 +41,7 @@ class charging_recommendation(object):
         :param data: JSON containing configuration parameters
         :return: recommmended charging slots
         """
+        # open the json file and load the object into a python dictionary
         with open(config_path) as f:
             config_dict = json.load(f)
         threshold = config_dict['TOU_threshold']
