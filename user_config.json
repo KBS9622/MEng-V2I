@@ -3,7 +3,7 @@
 
     "_comment" : "EV given parameters",
     "SOC" : "50",
-    "Charge_level" : "",
+    "Charge_level" : "10000",
 
     "_comment2" : "User defined parameter",
     "Charger_power" : 3000,

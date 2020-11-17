@@ -50,8 +50,13 @@ class charging_recommendation(object):
         lower_buffer = config_dict['Lower_buffer']
         upper_buffer = config_dict['Upper_buffer']
         emergency_reserves = config_dict['Emergency_reserves']
-        home_location = config_dict['Home_location']
+        home_location = config_dict['Home_location'] #maybe have a seperate file to initialise config parameters based on user input, like calculating emergency reserves based on location
         manual_override = config_dict['Manual_override']
+        initial_charge = config_dict['Charge_level']
+
+        lower_limit = lower_buffer + emergency_reserves # lower limit can also include the buffer the manufacturers set *if the charge level obtained from EV has not considered that yet
+        upper_limit = upper_buffer
+        available_charge = initial_charge - lower_limit
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -74,10 +79,17 @@ class charging_recommendation(object):
                 pred.loc[start_time_slot, ['charging', 'journey']] += (start.ceil(freq='30min') - start).seconds / 60
                 pred.loc[end_time_slot, ['charging', 'journey']] += (end - end_time_slot).seconds / 60
 
-            # calculate total charging time for the journey
+            # calculate total energy consumption for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])
 
-            # -> this is where the SOC consideration takes place (Boon)
+            # -> this is where the SOC (charge level) consideration takes place (Boon)
+            if available_charge >= journey_energy_consumption:
+                # reduce the available charge of EV by the amount needed for this journey
+                available_charge = available_charge - journey_energy_consumption
+                continue
+            else:
+                # reduce the additional charge needed to allow EV to complete this journey
+                journey_energy_consumption = journey_energy_consumption - available_charge
             
             charge_time = journey_energy_consumption / (charger_power * 60)
 
@@ -108,6 +120,8 @@ class charging_recommendation(object):
                     remainder = 0
 
                 idx_offset += 1
+
+        # add SOC (charge level) consideration here (Boon)
 
         # TOU threshold charging
         pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
