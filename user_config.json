@@ -14,7 +14,8 @@
     "Home_location" : "London",
     "EV_info" : {
         "Model" : "",
-        "Year" : ""
+        "Year" : "",
+        "Capacity" : "20000"
     },
     "Manual_override" : false,
     "Utilities_info" : {

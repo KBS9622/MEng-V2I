@@ -42,6 +42,7 @@ class charging_recommendation(object):
         :return: recommmended charging slots
         """
         # **** maybe before the system runs the scheduler, it should use API to request up to date info from EV, like SOC and charge level
+        # could add limit to when the EV is actually home and ready to charge (by reading the current passing through charger when initially plugged in)
         # open the json file and load the object into a python dictionary
         with open(config_path) as f:
             config_dict = json.load(f)
@@ -53,10 +54,12 @@ class charging_recommendation(object):
         home_location = config_dict['Home_location'] #maybe have a seperate file to initialise config parameters based on user input, like calculating emergency reserves based on location
         manual_override = config_dict['Manual_override']
         initial_charge = config_dict['Charge_level']
+        battery_capacity = config_dict['Capacity']
 
         lower_limit = lower_buffer + emergency_reserves # lower limit can also include the buffer the manufacturers set *if the charge level obtained from EV has not considered that yet
-        upper_limit = upper_buffer
+        upper_limit = battery_capacity - upper_buffer #does not consider the manufacturer upper buffer yet
         available_charge = initial_charge - lower_limit
+        expected_charge = initial_charge
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -91,6 +94,7 @@ class charging_recommendation(object):
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
             
+            expected_charge = expected_charge + journey_energy_consumption #keep track of expected charge level after charging
             charge_time = journey_energy_consumption / (charger_power * 60)
 
             # calculate number of time slots needed to charge EV
@@ -122,9 +126,23 @@ class charging_recommendation(object):
                 idx_offset += 1
 
         # add SOC (charge level) consideration here (Boon)
+        # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
+        charge_per_timeslot = charger_power * 30 / 60 #in Wh
+        # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
+        while expected_charge + charge_per_timeslot <= upper_limit:
+            # ignore any full slots and sort TOU slots by price
+            free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
+            free_time_slots = free_time_slots.sort_values(by=['TOU'])
+            # if the cheapest TOU slot is below threshold, charge for that slot
+            if free_time_slots['TOU'].iloc[[0]] <= threshold:
+                pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
+                #include the charge curve in the loop to update charge_per_timeslot according to current SOC
+            else:
+                break
 
-        # TOU threshold charging
-        pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
+
+        # TOU threshold charging (old implementation without SOC consideration)
+        # pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
 
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']
