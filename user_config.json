@@ -9,7 +9,7 @@
     "Charger_power" : 3000,
     "TOU_threshold" : 11,
     "Lower_buffer" : 20,
-    "Upper_buffer" : 80,
+    "Upper_buffer" : 74,
     "Emergency_reserves" : 0,
     "Home_location" : "London",
     "EV_info" : {
