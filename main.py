@@ -41,7 +41,7 @@ P_total = P_total.set_index(P_total.index
                             + DateOffset(days=(start_time.floor(freq='D')
                                                - P_total.iloc[0].name.floor(freq='D')).days))
 pred = TOU_obj.predict_and_compare(start_time, end_time)
-
+print(pred)
 ##########################################################################################
 
 #just runs the recommendation system that hasn't considered EV SOC

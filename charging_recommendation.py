@@ -47,19 +47,22 @@ class charging_recommendation(object):
         with open(config_path) as f:
             config_dict = json.load(f)
         threshold = config_dict['TOU_threshold']
-        charger_power = config_dict['Charger_power']
+        charger_power = config_dict['Charger_power'] # in Watts
         lower_buffer = config_dict['Lower_buffer']
         upper_buffer = config_dict['Upper_buffer']
         emergency_reserves = config_dict['Emergency_reserves']
         home_location = config_dict['Home_location'] #maybe have a seperate file to initialise config parameters based on user input, like calculating emergency reserves based on location
         manual_override = config_dict['Manual_override']
-        initial_charge = config_dict['Charge_level']
-        battery_capacity = config_dict['Capacity']
+        Wh_to_J = 3600
+        initial_charge = config_dict['Charge_level'] * Wh_to_J
+        battery_capacity = config_dict['EV_info']['Capacity'] * Wh_to_J
 
-        lower_limit = lower_buffer + emergency_reserves # lower limit can also include the buffer the manufacturers set *if the charge level obtained from EV has not considered that yet
-        upper_limit = battery_capacity - upper_buffer #does not consider the manufacturer upper buffer yet
+        lower_limit = battery_capacity * (lower_buffer + emergency_reserves)/100 # lower limit can also include the buffer the manufacturers set *if the charge level obtained from EV has not considered that yet
+        upper_limit = battery_capacity * (upper_buffer/100) #does not consider the manufacturer upper buffer yet
         available_charge = initial_charge - lower_limit
         expected_charge = initial_charge
+
+        print('available charge: {}'.format(available_charge))
 
         pred = self.TOU_data.copy()
         pred['charging'] = 0
@@ -83,19 +86,26 @@ class charging_recommendation(object):
                 pred.loc[end_time_slot, ['charging', 'journey']] += (end - end_time_slot).seconds / 60
 
             # calculate total energy consumption for the journey
-            journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])
+            journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total']) #given in Joules
+            
+            print('journey energy consumption : {}'.format(journey_energy_consumption))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
                 # reduce the available charge of EV by the amount needed for this journey
                 available_charge = available_charge - journey_energy_consumption
+                print('if')
                 continue
             else:
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
+                available_charge = 0
+                print('else')
             
+            print('journey energy consumption : {}'.format(journey_energy_consumption))
+
             expected_charge = expected_charge + journey_energy_consumption #keep track of expected charge level after charging
-            charge_time = journey_energy_consumption / (charger_power * 60)
+            charge_time = journey_energy_consumption / (charger_power * 60) # gives charging time in minutes
 
             # calculate number of time slots needed to charge EV
             quotient = int(charge_time // 30) # full slots
@@ -133,8 +143,9 @@ class charging_recommendation(object):
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
+            
             # if the cheapest TOU slot is below threshold, charge for that slot
-            if free_time_slots['TOU'].iloc[[0]] <= threshold:
+            if free_time_slots.iloc[0]['TOU'] <= threshold:
                 pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
                 #include the charge curve in the loop to update charge_per_timeslot according to current SOC
             else:
