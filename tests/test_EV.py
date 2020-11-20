@@ -8,7 +8,7 @@ test_dir = os.path.dirname(os.path.realpath(__file__))
 main_dir = os.path.dirname(os.path.normpath(test_dir))
 sys.path.insert(0, main_dir)
 
-from EV_data_analysis import EV
+from src.EV_data_analysis import EV
 
 class EV_tests(unittest.TestCase):
 

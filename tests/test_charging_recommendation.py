@@ -2,13 +2,13 @@ import os
 import sys
 import unittest
 import pandas as pd
-from pandas._testing import assert_frame_equal, assert_series_equal
+from pandas._testing import assert_series_equal
 
 test_dir = os.path.dirname(os.path.realpath(__file__))
 main_dir = os.path.dirname(os.path.normpath(test_dir))
 sys.path.insert(0, main_dir)
 
-from charging_recommendation import charging_recommendation
+from src.charging_recommendation import charging_recommendation
 
 class charging_recommendation_tests(unittest.TestCase):
 
