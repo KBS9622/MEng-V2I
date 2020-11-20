@@ -62,52 +62,61 @@ class charging_recommendation(object):
         available_charge = initial_charge - lower_limit
         expected_charge = initial_charge
 
-        print('available charge: {}'.format(available_charge))
-
         pred = self.TOU_data.copy()
         pred['charging'] = 0
         pred['journey'] = 0
 
+        # TEMPORARY CODE: to determine available charging slots 
+        start_of_day = self.journey_start[0]
+        print(start_of_day)
+        end_of_day = self.journey_end[-1]
+        print(end_of_day)
+
+        # find correct time slots for start and end points
+        start_time_slot = start_of_day.floor(freq='30min')
+        end_time_slot = end_of_day.floor(freq='30min')
+
+        # fully fill any time slots between start_time_slot and end_time_slot
+        pred.loc[np.logical_and(pred.index > start_time_slot, pred.index < end_time_slot), ['charging', 'journey']] = 30
+
+        # fill start_time_slot and end_time_slot based on journey time
+        if start_time_slot == end_time_slot:
+            pred.loc[start_time_slot, ['charging', 'journey']] += (end_of_day - start_of_day).seconds / 60
+        else:
+            pred.loc[start_time_slot, ['charging', 'journey']] += (start_of_day.ceil(freq='30min') - start_of_day).seconds / 60
+            pred.loc[end_time_slot, ['charging', 'journey']] += (end_of_day - end_time_slot).seconds / 60
+        print(pred)
+        
         # iterate through all pairs of journey start and end points
         for start, end in zip(self.journey_start, self.journey_end):
-            print('start : {}'.format(start))
-            print('end : {}'.format(end))
-            # find correct time slots for start and end points
-            start_time_slot = start.floor(freq='30min')
-            end_time_slot = end.floor(freq='30min')
 
-            print('start slot : {}'.format(start_time_slot))
-            print('end slot : {}'.format(end_time_slot))
+            # TEMPORARY COMMENTED: assumption is that we can only charge after end of last journey and before first journey of tmr, so the code below is redundant
+            # # find correct time slots for start and end points
+            # start_time_slot = start.floor(freq='30min')
+            # end_time_slot = end.floor(freq='30min')
 
-            # fully fill any time slots between start_time_slot and end_time_slot
-            pred.loc[np.logical_and(pred.index > start_time_slot, pred.index < end_time_slot), ['charging', 'journey']] = 30
+            # # fully fill any time slots between start_time_slot and end_time_slot
+            # pred.loc[np.logical_and(pred.index > start_time_slot, pred.index < end_time_slot), ['charging', 'journey']] = 30
 
-            # fill start_time_slot and end_time_slot based on journey time
-            if start_time_slot == end_time_slot:
-                pred.loc[start_time_slot, ['charging', 'journey']] += (end - start).seconds / 60
-            else:
-                pred.loc[start_time_slot, ['charging', 'journey']] += (start.ceil(freq='30min') - start).seconds / 60
-                pred.loc[end_time_slot, ['charging', 'journey']] += (end - end_time_slot).seconds / 60
-            print(pred)
+            # # fill start_time_slot and end_time_slot based on journey time
+            # if start_time_slot == end_time_slot:
+            #     pred.loc[start_time_slot, ['charging', 'journey']] += (end - start).seconds / 60
+            # else:
+            #     pred.loc[start_time_slot, ['charging', 'journey']] += (start.ceil(freq='30min') - start).seconds / 60
+            #     pred.loc[end_time_slot, ['charging', 'journey']] += (end - end_time_slot).seconds / 60
+            
             # calculate total energy consumption for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total']) #given in Joules
-            
-            print('journey energy consumption : {}'.format(journey_energy_consumption))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
                 # reduce the available charge of EV by the amount needed for this journey
                 available_charge = available_charge - journey_energy_consumption
-                print('if')
                 continue
             else:
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
-                print('else')
-            
-            print('journey energy consumption : {}'.format(journey_energy_consumption))
-
             expected_charge = expected_charge + journey_energy_consumption #keep track of expected charge level after charging
             charge_time = journey_energy_consumption / (charger_power * 60) # gives charging time in minutes
 
@@ -147,7 +156,6 @@ class charging_recommendation(object):
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[pred['charging'] < 30].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
-            print(free_time_slots)
             # if the cheapest TOU slot is below threshold, charge for that slot
             if free_time_slots.iloc[0]['TOU'] <= threshold:
                 #if the cheapest slot is partially filled, then calculate how much charge the system would add for the rest of the timeslot
@@ -157,13 +165,11 @@ class charging_recommendation(object):
                     # if charging for the remainder of the slot will NOT exceed upper limit, allocate full slot
                     if (upper_limit - expected_charge) >= (charger_power * 60 * charge_time):
                         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
-                        print('partial')
                         expected_charge += (charger_power * 60 * charge_time)
                     # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
                     else:
                         charge_time = (upper_limit - expected_charge) / (charger_power * 60)
                         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
-                        print('partial-final')
                         expected_charge = upper_limit
                 else:
                     # if charging for the full slot will NOT exceed upper limit, allocate full slot
@@ -175,13 +181,11 @@ class charging_recommendation(object):
                     else:
                         charge_time = (upper_limit - expected_charge) / (charger_power * 60)
                         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time
-                        print('empty-final')
                         expected_charge = upper_limit
                 #include the charge curve in the loop to update charge_per_timeslot according to current SOC
             else:
                 print('TOU exceeds threshold, no additional charge slots allocated.')
                 break
-        print(expected_charge)
 
 
 
