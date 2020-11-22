@@ -58,7 +58,7 @@ class Simulation:
         """
         self.start_time = pd.to_datetime('2019-01-31 00:00:00')
         self.end_time = pd.to_datetime('2019-01-31 23:30:00')
-        predicted_tou = self.tou_obj.predict_and_compare(start_time, end_time)
+        predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         return predicted_tou
 
     def graph_plotter(self, file, subdir):
