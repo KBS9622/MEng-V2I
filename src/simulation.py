@@ -49,15 +49,15 @@ class Simulation:
                                                        - p_total.iloc[0].name.floor(freq='D')).days))
         return p_total
 
-    def get_tou_data(self, start_time="", end_time="" ):
+    def get_tou_data(self, start_time=pd.to_datetime('2019-01-31 00:00:00'), end_time=pd.to_datetime('2019-01-31 23:30:00') ):
         """
         
         :param start_time: 
         :param end_time: 
         :return: 
         """
-        self.start_time = pd.to_datetime('2019-01-31 00:00:00')
-        self.end_time = pd.to_datetime('2019-01-31 23:30:00')
+        self.start_time = start_time
+        self.end_time = end_time
         predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         return predicted_tou
 
