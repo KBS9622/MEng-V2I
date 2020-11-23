@@ -18,6 +18,7 @@
         "Capacity" : 20000
     },
     "Manual_override" : false,
+    "System_consideration_span" : 24,
     "Utilities_info" : {
         "Supplier" : "Octopus Energy",
         "Tariff" : "Agile rates",
