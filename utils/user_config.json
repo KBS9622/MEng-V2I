@@ -1,0 +1,30 @@
+{
+    "User_ID" : "00000001",
+
+    "_comment" : "EV given parameters",
+    "SOC" : "",
+    "Charge_level" : 5000,
+
+    "_comment2" : "User defined parameter",
+    "Charger_power" : 3000,
+    "TOU_threshold" : 11,
+    "Lower_buffer" : 20,
+    "Upper_buffer" : 74,
+    "Emergency_reserves" : 0,
+    "Home_location" : "London",
+    "EV_info" : {
+        "Model" : "",
+        "Year" : "",
+        "Capacity" : 20000
+    },
+    "Manual_override" : false,
+    "System_consideration_span" : 24,
+    "Utilities_info" : {
+        "Supplier" : "Octopus Energy",
+        "Tariff" : "Agile rates",
+        "API" : ""
+    },
+
+    "_comment3" : "System defined parameters",
+    "EV_energy_efficiency" : ""
+}
