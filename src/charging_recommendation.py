@@ -6,19 +6,21 @@ from datetime import datetime, timedelta
 
 class charging_recommendation(object):
 
-    def __init__(self, EV_data, TOU_data, previous_EV_data=None):
+    def __init__(self, EV_data, TOU_data, previous_EV_data):
         self.EV_data = EV_data
-        self.TOU_data = TOU_data
+        # self.TOU_data = TOU_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
-        self.previous_end = None
+        # self.previous_end = None
         # if system inputs the starting scenario, then create these variables
-        if previous_EV_data:
-            self.previous_end = [previous_EV_data.iloc[-1, :].name]
+        # must input starting scenario when creating object
+        self.previous_end = [previous_EV_data.iloc[-1, :].name]
+        #temp code:
+        self.TOU_data = TOU_data.loc[previous_EV_data.iloc[-1, :].name:, :]
 
     def set_EV_data(self, new_EV_data):
         """
         Method to update the variable self.EV_Data and use self.EV_data to determine reference point for charging availability
-
+        
         :param data: new_EV_data (the predicted drive cycle)
         :return: -
         """
@@ -26,6 +28,7 @@ class charging_recommendation(object):
         self.previous_end = [new_EV_data.iloc[0, :].name]
         self.EV_data = new_EV_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
+        #may need some work
 
     def set_TOU_data(self, new_TOU_data):
         """
@@ -107,8 +110,6 @@ class charging_recommendation(object):
             prev_end = end
             prev_end_time_slot = end_time_slot
 
-        print(pred)
-
         return pred
 
     def recommend(self):
@@ -143,6 +144,7 @@ class charging_recommendation(object):
 
             # calculate total energy consumption for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
+            print('journey energy consumption: {}'.format(journey_energy_consumption))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -154,6 +156,8 @@ class charging_recommendation(object):
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
+            print('expected charge: {}'.format(expected_charge))
+
             charge_time = journey_energy_consumption / (self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 
             # calculate number of time slots needed to charge EV
@@ -163,6 +167,7 @@ class charging_recommendation(object):
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
+            print(free_time_slots)
 
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):

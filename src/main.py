@@ -12,12 +12,14 @@ TOU_obj = TOU(file)
 # uncomment the line below if you're running for the first time
 # results = TOU_obj.create_and_fit_model()
 
-start_time = pd.to_datetime('2019-01-31 00:00:00')
-end_time = pd.to_datetime('2019-01-31 23:30:00')
+start_time1 = pd.to_datetime('2019-01-31 00:00:00')
+end_time1 = pd.to_datetime('2019-01-31 23:30:00')
+start_time = pd.to_datetime('2019-02-01 00:00:00')
+end_time = pd.to_datetime('2019-02-01 23:30:00')
 
 
-pred = TOU_obj.predict_and_compare(start_time, end_time)
-print(pred)
+pred = TOU_obj.predict_and_compare(start_time1, end_time)
+# print(pred)
 
 ##########################################################################################
 
@@ -46,20 +48,22 @@ P_total = P_total.set_index('timestamp')
 P_total = P_total.set_index(P_total.index
                             + DateOffset(days=(start_time.floor(freq='D')
                                                - P_total.iloc[0].name.floor(freq='D')).days))
-print('PTOTAL:\n{}'.format(P_total))
+# print('PTOTAL:\n{}'.format(P_total))
 
 P_total2 = EV_obj2.data.copy()
 P_total2 = P_total2.drop(columns=cols_to_drop)
 P_total2 = P_total2.set_index('timestamp')
 P_total2 = P_total2.set_index(P_total2.index
-                            + DateOffset(days=(start_time.floor(freq='D')
+                            + DateOffset(days=(start_time1.floor(freq='D')
                                                - P_total2.iloc[0].name.floor(freq='D')).days))
-print('PTOTAL2:\n{}'.format(P_total2))
+# print('PTOTAL2:\n{}'.format(P_total2))
 ##########################################################################################
 
 #just runs the recommendation system that hasn't considered EV SOC
 
-# charging_recom_obj = charging_recommendation(P_total, pred)
+charging_recom_obj = charging_recommendation(P_total, pred, P_total2)
+print(charging_recom_obj.TOU_data.sort_values(by=['TOU']))
 
-# json_path = 'user_config.json'
-# print(charging_recom_obj.recommend(json_path))
+json_path = '/Users/koeboonshyang/Documents/GitHub/MEng-V2I/utils/user_config.json'
+charging_recom_obj.update_user_config(json_path)
+print(charging_recom_obj.recommend())
