@@ -1,7 +1,7 @@
 import pandas as pd
-from src.EV_data_analysis import EV
-from src.TOU_analysis_and_prediction import TOU
-from src.charging_recommendation import charging_recommendation
+from EV_data_analysis import EV
+from TOU_analysis_and_prediction import TOU
+from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
 
 ##########################################################################################
