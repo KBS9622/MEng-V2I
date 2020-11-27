@@ -40,5 +40,8 @@ if __name__ == "__main__":
     miles_per_km = 0.621371
 
     file_path = 'data/yun_solution_drive_cycle/v1.csv'
-    data = pd.read_csv(file_path)
-    print(data.head())
+    df = pd.read_csv(file_path)
+    hi = pd.to_datetime(df['timeStamp'])
+    print(hi.dtypes)
+    # df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%Y-%m-%d  %H:%M:%S')
+    print(df.head())
