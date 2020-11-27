@@ -41,5 +41,5 @@ if __name__ == "__main__":
 
     file_path = 'data/yun_solution_drive_cycle/Device12.csv'
     df = pd.read_csv(file_path, index_col=2)
-    df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%d/%m/%Y %H:%M:%S')
+    # df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%d/%m/%Y %H:%M:%S')
     print(df.head())
