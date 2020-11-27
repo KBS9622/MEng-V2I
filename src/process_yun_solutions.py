@@ -39,9 +39,7 @@ def format_EV_data(self):
 if __name__ == "__main__":
     miles_per_km = 0.621371
 
-    file_path = 'data/yun_solution_drive_cycle/v1.csv'
-    df = pd.read_csv(file_path)
-    hi = pd.to_datetime(df['timeStamp'])
-    print(hi.dtypes)
-    # df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%Y-%m-%d  %H:%M:%S')
+    file_path = 'data/yun_solution_drive_cycle/Device12.csv'
+    df = pd.read_csv(file_path, index_col=2)
+    df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%d/%m/%Y %H:%M:%S')
     print(df.head())
