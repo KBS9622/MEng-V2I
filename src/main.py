@@ -6,29 +6,29 @@ from pandas.tseries.offsets import DateOffset
 
 ##########################################################################################
 
-file = 'agile_rates_2019.xlsx'
-TOU_obj = TOU(file)
+# file = 'agile_rates_2019.xlsx'
+# TOU_obj = TOU(file)
 
-# uncomment the line below if you're running for the first time
-# results = TOU_obj.create_and_fit_model()
+# # uncomment the line below if you're running for the first time
+# # results = TOU_obj.create_and_fit_model()
 
-start_time1 = pd.to_datetime('2019-01-31 00:00:00')
-end_time1 = pd.to_datetime('2019-01-31 23:30:00')
-start_time = pd.to_datetime('2019-02-01 00:00:00')
-end_time = pd.to_datetime('2019-02-01 23:30:00')
+# start_time1 = pd.to_datetime('2019-01-31 00:00:00')
+# end_time1 = pd.to_datetime('2019-01-31 23:30:00')
+# start_time = pd.to_datetime('2019-02-01 00:00:00')
+# end_time = pd.to_datetime('2019-02-01 23:30:00')
 
 
-# pred = TOU_obj.predict_and_compare(start_time1, end_time)
-hi = TOU_obj.predict_and_compare(start_time, end_time)
+# # pred = TOU_obj.predict_and_compare(start_time1, end_time)
+# hi = TOU_obj.predict_and_compare(start_time, end_time)
 # print(pred)
 
 ##########################################################################################
 
-# file = '2012-03-01.csv'
+file = '2012-03-01.csv'
 # file2 = '2012-03-02.csv'
-# subdir = '1119055_1'
+subdir = '1119055_1'
 
-# EV_obj = EV(file, subdir)
+EV_obj = EV(file, subdir)
 # EV_obj2 = EV(file2, subdir)
 
 # EV_obj.soc_over_time()
