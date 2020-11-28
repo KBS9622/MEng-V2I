@@ -117,10 +117,11 @@ class EV(object):
         :return: data in DataFrame with 4 new columns: speed in m/s, acceleration in m/s^2,
                                                         power at wheels in W and power at electric motor in W
         """
-        mph_to_mps = 0.44704
+        # Comment below if using formatted yun solutions data
+        # mph_to_mps = 0.44704
 
-        self.data['speed_mps'] = mph_to_mps * self.data['speed_mph']
-        self.data['accel_mps2'] = mph_to_mps * self.data['accel_meters_ps']
+        # self.data['speed_mps'] = mph_to_mps * self.data['speed_mph']
+        # self.data['accel_mps2'] = mph_to_mps * self.data['accel_meters_ps'] #the feature is named m/s but unit is mph/s
 
         # Power required at the wheels
         self.data['P_wheels'] = (self.m * self.data['accel_mps2'] + self.m * self.g * np.cos(self.theta) *
