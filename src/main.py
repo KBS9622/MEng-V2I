@@ -8,7 +8,7 @@ from pandas.tseries.offsets import DateOffset
 
 file3 = 'full_data.csv'
 subdir_TOU = 'data/TOU_Data'
-TOU_obj = TOU(file3, subdir = subdir_TOU)
+TOU_obj = TOU(file3, subdir=subdir_TOU)
 
 # # uncomment the line below if you're running for the first time
 results = TOU_obj.create_and_fit_model()
