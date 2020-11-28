@@ -15,6 +15,25 @@ class TOU(object):
         self.data = self.format_TOU_csv()
         self.time_idx_TOU_price = self.create_time_idx_TOU_price_csv()
 
+    def load_csv_data(self, file_name, subdir=''):
+        """
+        Loads data from .csv file in to DataFrame
+        :param file_name: .csv file name in string
+        :param subdir: optional parameter to specify the subdirectory of the file
+        :return: extracted data in DataFrame
+        """
+
+        file_dir = os.path.realpath('./'+subdir)
+        for root, dirs, files in os.walk(file_dir):
+            if root.endswith(subdir):
+                for name in files:
+                    if name == file_name:
+                        file_path = os.path.join(root, name)
+
+        df = pd.read_csv(file_path)
+
+        return df
+
     def load_xlsx_data(self, file_name, subdir=''):
         """
         Loads data from .xlsx file in to DataFrame
@@ -65,7 +84,7 @@ class TOU(object):
         :return: formatted and stripped DataFrame
         """
 
-        df = self.load_xlsx_data(self.file_name, self.subdir)
+        df = self.load_csv_data(self.file_name, self.subdir)
 
         cols_to_drop = ['code', 'gsp', 'region_name']
         df = df.drop(columns=cols_to_drop)
@@ -133,7 +152,7 @@ class TOU(object):
 
         mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
                                         order=(1, 1, 1),
-                                        seasonal_order=(1, 1, 0, 52),
+                                        seasonal_order=(1, 1, 0, 12),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
         results = mod.fit()
@@ -167,8 +186,8 @@ class TOU(object):
         else:
             unique_file_name = start.strftime('%Y-%m-%d') + '_to_' + end.strftime('%Y-%m-%d')
 
-        plt.savefig('TOU_figures/TOU_actual_n_pred_' + unique_file_name + '.png')
 
+        plt.savefig('./data/TOU_figures/TOU_actual_n_pred_'+unique_file_name+'.png')
         return pred
 
     def plot_daily_TOU(self, date):
@@ -181,7 +200,7 @@ class TOU(object):
         data_for_selected_date = self.data.loc[self.data['date'] == date]
 
         data_for_selected_date.plot(x='from', y='unit_rate_incl_vat', figsize=(10, 5))
-        plt.savefig('TOU_figures/TOU_' + date + '.png')
+        plt.savefig('./data/TOU_figures/TOU_' + date + '.png')
 
     def plot_multiple_TOU(self, date_list):
         """
@@ -197,7 +216,7 @@ class TOU(object):
             plt.plot('from', 'unit_rate_incl_vat', data=data_for_selected_date, label=date)
 
         plt.legend()
-        plt.savefig('TOU_figures/TOU_multiple_' + str(len(date_list)) + '.png')
+        plt.savefig('./data/TOU_figures/TOU_multiple_' + str(len(date_list)) + '.png')
 
     def plot_yearly_avg_TOU(self):
         """
@@ -212,4 +231,4 @@ class TOU(object):
         time_and_avg = {'timestamp': self.data['from'].unique(), 'avg': avg}
         df_time_and_avg = pd.DataFrame(data=time_and_avg)
         df_time_and_avg.plot(x='timestamp', y='avg', figsize=(10, 5))
-        plt.savefig('TOU_figures/TOU_yearly.png')
+        plt.savefig('./data/TOU_figures/TOU_yearly.png')

@@ -85,3 +85,7 @@ class GrabTOUData:
         with open('./data/TOU_Data/todays_data.csv', 'w', newline="") as today_csv:
             writer = csv.writer(today_csv)
             writer.writerows(todays_rows)
+
+if __name__ == "__main__":
+    hi = GrabTOUData()
+    hi.download_tou_csv()
