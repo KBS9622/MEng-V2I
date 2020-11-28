@@ -64,7 +64,8 @@ class EV(object):
         :return: extracted data in DataFrame
         """
 
-        file_dir = os.path.realpath('./')
+        file_dir = os.path.realpath('./'+subdir)
+        print(file_dir)
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
                 for name in files:
@@ -83,7 +84,7 @@ class EV(object):
 
         df = self.load_csv_data(self.file_name, self.subdir)
 
-        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%Y-%m-%d %H:%M:%S')
+        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%d/%m/%Y %H:%M:%S')
 
         return df
 

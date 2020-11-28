@@ -68,8 +68,8 @@ class GrabTOUData:
         converts to respective csv files
         :return: None
         """
-        response = requests.get('https://www.energy-stats.uk/wp-content/historic-data/csv_agileoutgoing_C_London.csv')
-        with open('../data/TOU_Data/full_data.csv', 'wb') as file:
+        response = requests.get('https://www.energy-stats.uk/wp-content/historic-data/csv_agile_C_London.csv')
+        with open('./data/TOU_Data/full_data.csv', 'wb') as file:
             file.write(response.content)
 
         decoded_content = response.content.decode('utf-8')
@@ -78,10 +78,14 @@ class GrabTOUData:
         tomorrows_rows = rows[-46:]
         todays_rows = rows[-94:-45]
 
-        with open('../data/TOU_Data/tomorrows_data.csv', 'w', newline="") as tomorrow_csv:
+        with open('./data/TOU_Data/tomorrows_data.csv', 'w', newline="") as tomorrow_csv:
             writer = csv.writer(tomorrow_csv)
             writer.writerows(tomorrows_rows)
 
-        with open('../data/TOU_Data/todays_data.csv', 'w', newline="") as today_csv:
+        with open('./data/TOU_Data/todays_data.csv', 'w', newline="") as today_csv:
             writer = csv.writer(today_csv)
             writer.writerows(todays_rows)
+
+if __name__ == "__main__":
+    hi = GrabTOUData()
+    hi.download_tou_csv()

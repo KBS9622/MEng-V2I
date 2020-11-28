@@ -6,11 +6,12 @@ from pandas.tseries.offsets import DateOffset
 
 ##########################################################################################
 
-# file = 'agile_rates_2019.xlsx'
-# TOU_obj = TOU(file)
+file3 = 'full_data.csv'
+subdir_TOU = 'data/TOU_Data'
+TOU_obj = TOU(file3, subdir = subdir_TOU)
 
 # # uncomment the line below if you're running for the first time
-# # results = TOU_obj.create_and_fit_model()
+results = TOU_obj.create_and_fit_model()
 
 # start_time1 = pd.to_datetime('2019-01-31 00:00:00')
 # end_time1 = pd.to_datetime('2019-01-31 23:30:00')
@@ -18,17 +19,17 @@ from pandas.tseries.offsets import DateOffset
 # end_time = pd.to_datetime('2019-02-01 23:30:00')
 
 
-# # pred = TOU_obj.predict_and_compare(start_time1, end_time)
-# hi = TOU_obj.predict_and_compare(start_time, end_time)
-# print(pred)
+# pred = TOU_obj.predict_and_compare(start_time1, end_time)
+# # hi = TOU_obj.predict_and_compare(start_time, end_time)
+# # print(pred)
 
-##########################################################################################
+# ##########################################################################################
 
-file = '2012-03-01.csv'
-# file2 = '2012-03-02.csv'
-subdir = '1119055_1'
+# file1 = 'Device12_26_9_17.csv'
+# file2 = 'Device12_25_9_17.csv'
+# subdir = 'data/yun_solution_drive_cycle'
 
-EV_obj = EV(file, subdir)
+# EV_obj = EV(file1, subdir)
 # EV_obj2 = EV(file2, subdir)
 
 # EV_obj.soc_over_time()
@@ -37,11 +38,13 @@ EV_obj = EV(file, subdir)
 # y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc', 'P_total']
 # file_name = ['energy_consumption.png', 'speed_profile.png', 'energy_consumption_with_regen.png',
 #              'n_rb.png', 'soc.png', 'total_energy_conumption.png']
-# EV_obj.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file.strip('.csv'))
+# EV_obj.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file1.strip('.csv'))
 # EV_obj2.graph_plotter(y=y, file_name=file_name, subdir=subdir, date=file2.strip('.csv'))
 
-# cols_to_drop = ['cycle_sec', 'timestep', 'speed_mph', 'accel_meters_ps', 'speed_mps',
-#                  'accel_mps2', 'P_wheels', 'P_electric_motor', 'n_rb', 'P_regen']
+# # cols_to_drop = ['cycle_sec', 'timestep', 'speed_mph', 'accel_meters_ps', 'speed_mps',
+# #                  'accel_mps2', 'P_wheels', 'P_electric_motor', 'n_rb', 'P_regen']
+
+# cols_to_drop = ['speed_mps', 'accel_mps2', 'P_wheels', 'P_electric_motor', 'n_rb', 'P_regen']
 
 # P_total = EV_obj.data.copy()
 # P_total = P_total.drop(columns=cols_to_drop)
