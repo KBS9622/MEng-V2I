@@ -5,14 +5,15 @@ import statsmodels.api as sm
 from statsmodels.tsa.statespace import sarimax
 from pandas.tseries.offsets import DateOffset
 
+
 class TOU(object):
 
-    def __init__(self, file_name, subdir=''):
+    def __init__(self, file_name, subdir='TOU_data'):
 
         self.file_name = file_name
         self.subdir = subdir
-        self.data = self.format_TOU_data()
-        self.time_idx_TOU_price = self.create_time_idx_TOU_price()
+        self.data = self.format_TOU_csv()
+        self.time_idx_TOU_price = self.create_time_idx_TOU_price_csv()
 
     def load_xlsx_data(self, file_name, subdir=''):
         """
@@ -34,6 +35,29 @@ class TOU(object):
 
         return df
 
+    def load_csv_data(self, file_name, subdir='', header_exists=False):
+        """
+        Loads data from .csv file in to DataFrame
+
+        :param file_name: .csv file name in string
+        :param subdir: optional parameter to specify the subdirectory of the file
+        :return: extracted data in DataFrame
+        """
+
+        file_dir = os.path.realpath('../')
+        for root, dirs, files in os.walk(file_dir):
+            if root.endswith(subdir):
+                for name in files:
+                    if name == file_name:
+                        file_path = os.path.join(root, name)
+
+        if not header_exists:
+            df = pd.read_csv(file_path, header=None)
+        else:
+            df = pd.read_csv(file_path)
+
+        return df
+
     def format_TOU_data(self):
         """
         Removes unwanted features (columns) and formats date and time
@@ -51,6 +75,34 @@ class TOU(object):
         df['to'] = pd.to_timedelta(df['to'])
 
         return df
+
+    def format_TOU_csv(self, header_exists=False):
+        data = self.load_csv_data(self.file_name, self.subdir, header_exists=header_exists)
+
+        if not header_exists:
+            cols = ['date', 'from', 'code', 'region_name', 'unit_rate_incl_vat']
+            data.columns = cols
+
+        date_list = data['date'].str.split('T', n=1, expand=True)
+        date_list[1] = date_list[1].str.replace('Z', '')
+
+        data['date'] = date_list[0]
+        data['from'] = date_list[1]
+        data['date'] = pd.to_datetime(data['date'])
+        data['from'] = pd.to_timedelta(data['from'])
+
+        return data
+
+    def create_time_idx_TOU_price_csv(self):
+        time_idx_TOU_price = self.data.copy()
+
+        time_idx_TOU_price['timestamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
+        time_idx_TOU_price['timestamp'] += DateOffset(minutes=60)
+        cols_to_drop = ['date', 'from', 'code', 'region_name']
+        time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
+        time_idx_TOU_price = time_idx_TOU_price.set_index('timestamp')
+
+        return time_idx_TOU_price
 
     def create_time_idx_TOU_price(self):
         """
@@ -102,7 +154,7 @@ class TOU(object):
         fitted_model = sarimax.SARIMAXResultsWrapper.load(fitted_model_filename)
 
         pred = fitted_model.predict(start=start + DateOffset(minutes=30),
-                                           end=end + DateOffset(minutes=30), dynamic=False)
+                                    end=end + DateOffset(minutes=30), dynamic=False)
         pred = pred.to_frame(name='TOU')
         pred = pred.set_index(pred.index - DateOffset(minutes=30))
 
@@ -115,7 +167,7 @@ class TOU(object):
         else:
             unique_file_name = start.strftime('%Y-%m-%d') + '_to_' + end.strftime('%Y-%m-%d')
 
-        plt.savefig('TOU_figures/TOU_actual_n_pred_'+unique_file_name+'.png')
+        plt.savefig('TOU_figures/TOU_actual_n_pred_' + unique_file_name + '.png')
 
         return pred
 
