@@ -12,6 +12,7 @@ class Simulation:
         if train_tou:
             self.tou_obj.create_and_fit_model()
         self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir)
+        self.recommendation_obj = self.create_recommendation_obj()
         self.graph_plotter(drive_cycle_file, drive_cycle_subdir)
 
     def plugged_in(self):
@@ -23,15 +24,24 @@ class Simulation:
         # self.run_recommendation_algorithm()
         pass
 
+    def create_recommendation_obj(self):
+        predicted_tou_data = self.get_tou_data(start_time=pd.to_datetime('2019-01-31 00:00:00') ,
+                                               end_time=pd.to_datetime('2019-01-31 00:00:00'))
+        ev_consumption_data = self.format_ev_data()
+        recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, ev_consumption_data)
+        return recommendation_obj
+
+
     def run_recommendation_algorithm(self):
         """
         
         :return: 
         """
-        predicted_tou_data = self.get_tou_data()
-        ev_consumption_data = self.format_ev_data()
-        recommendation_results = charging_recommendation(ev_consumption_data, predicted_tou_data)
-        return recommendation_results
+        self.recommendation_obj.set_TOU_data(self.get_tou_data())
+        self.recommendation_obj.set_EV_data(self.format_ev_data())
+        json_path = './utils/user_config.json'
+        self.recommendation_obj.update_user_config(json_path)
+        return self.recommendation_obj.recommend()
 
     def format_ev_data(self):
         """
