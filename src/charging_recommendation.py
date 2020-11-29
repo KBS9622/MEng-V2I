@@ -25,9 +25,11 @@ class charging_recommendation(object):
         :return: -
         """
         # we could have the simulation file determine the span of prediction and load drive cycles based on the span
-        self.previous_end = [new_EV_data.iloc[0, :].name]
+        self.previous_end = [self.EV_data.iloc[-1, :].name]
+        self.charging_time_start = self.journey_end[-1]
         self.EV_data = new_EV_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
+        self.charging_time_end = self.journey_start[0]
         #may need some work
 
     def set_TOU_data(self, new_TOU_data):
