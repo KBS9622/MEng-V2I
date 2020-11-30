@@ -173,7 +173,7 @@ class EV(object):
         :param data: power_in_joules [power (because data is measured every second)]
         :return: new SOC for the EV object
         """
-
+        # REMEMBER: battery efficiency needs to be factored in when determining amount to charge in recommend method of charging_recommendation.py
         # maximum SOC to ensure safe operation
         max_soc = 95  # in %
         max_charge_lvl = (max_soc / 100) * self.capacity
