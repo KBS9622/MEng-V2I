@@ -1,14 +1,14 @@
 import pandas as pd
-from src.EV_data_analysis import EV
-from src.TOU_analysis_and_prediction import TOU
-from src.charging_recommendation import charging_recommendation
+from EV_data_analysis import EV
+from TOU_analysis_and_prediction import TOU
+from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
 
 
 class Simulation:
-    def __init__(self, drive_cycle_file, drive_cycle_subdir, tou_file, train_tou):
+    def __init__(self, drive_cycle_file, drive_cycle_subdir, tou_file, tou_subdir, train_tou):
         self.min_tou_threshold = 0
-        self.tou_obj = TOU(tou_file)
+        self.tou_obj = TOU(tou_file, tou_subdir)
         if train_tou:
             self.tou_obj.create_and_fit_model()
         self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir)
@@ -27,8 +27,7 @@ class Simulation:
         """
 
         self.start_next_day += pd.DateOffset(1)
-        self.run_recommendation_algorithm()
-        pass
+        print(self.run_recommendation_algorithm())
 
     def create_recommendation_obj(self):
         previous_ev_data = self.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'),
@@ -93,8 +92,18 @@ class Simulation:
         self.end_time = end_time
         # predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         # not using predicted, using actual values ... complete line 95 to do so
-        predicted_tou = self.tou_obj.data
+        self.format_tou_data()
+        predicted_tou = self.tou_obj.time_idx_TOU_price.loc[start_time:end_time,:]
         return predicted_tou
+
+    def format_tou_data(self):
+        """
+        ONLY USE IF FEEDING IN REAL DATA and not predicted
+        :param : 
+        :return: 
+        """
+        self.tou_obj.time_idx_TOU_price.columns = ['TOU']
+
 
     def graph_plotter(self, file, subdir):
         """

@@ -97,7 +97,7 @@ class TOU(object):
         time_idx_TOU_price = self.data.copy()
 
         time_idx_TOU_price['timestamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
-        time_idx_TOU_price['timestamp'] += DateOffset(minutes=60)
+        # time_idx_TOU_price['timestamp'] += DateOffset(minutes=60)
         cols_to_drop = ['date', 'from', 'code', 'region_name']
         time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
         time_idx_TOU_price = time_idx_TOU_price.set_index('timestamp')
@@ -133,7 +133,7 @@ class TOU(object):
 
         mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
                                         order=(1, 1, 1),
-                                        seasonal_order=(1, 1, 0, 26),
+                                        seasonal_order=(1, 1, 0, 12),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
         results = mod.fit()
@@ -155,9 +155,11 @@ class TOU(object):
 
         pred = fitted_model.predict(start=start + DateOffset(minutes=30),
                                     end=end + DateOffset(minutes=30), dynamic=False)
+        print(pred)
         pred = pred.to_frame(name='TOU')
+        print(pred)
         pred = pred.set_index(pred.index - DateOffset(minutes=30))
-
+        print(pred)
         ax = self.time_idx_TOU_price[start:end].plot(label='actual')
         pred.plot(ax=ax, label='predicted', figsize=(10, 5))
         plt.legend()

@@ -3,15 +3,16 @@ from EV_data_analysis import EV
 from TOU_analysis_and_prediction import TOU
 from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
+from simulation import Simulation
 
 ##########################################################################################
 
-file3 = 'full_data.csv'
-subdir_TOU = 'data/TOU_Data'
-TOU_obj = TOU(file3, subdir=subdir_TOU)
+# file3 = 'full_data.csv'
+# subdir_TOU = 'data/TOU_Data'
+# TOU_obj = TOU(file3, subdir=subdir_TOU)
 
-# # uncomment the line below if you're running for the first time
-results = TOU_obj.create_and_fit_model()
+# # # uncomment the line below if you're running for the first time
+# results = TOU_obj.create_and_fit_model()
 
 # start_time1 = pd.to_datetime('2019-01-31 00:00:00')
 # end_time1 = pd.to_datetime('2019-01-31 23:30:00')
@@ -20,8 +21,8 @@ results = TOU_obj.create_and_fit_model()
 
 
 # pred = TOU_obj.predict_and_compare(start_time1, end_time)
-# # hi = TOU_obj.predict_and_compare(start_time, end_time)
-# # print(pred)
+# # # hi = TOU_obj.predict_and_compare(start_time, end_time)
+# print(pred)
 
 # ##########################################################################################
 
@@ -71,3 +72,23 @@ results = TOU_obj.create_and_fit_model()
 # json_path = '/Users/koeboonshyang/Documents/GitHub/MEng-V2I/utils/user_config.json'
 # charging_recom_obj.update_user_config(json_path)
 # print(charging_recom_obj.recommend())
+
+drive_cycle_file = 'Device12_formatted.csv'
+drive_cycle_subdir = 'data/yun_solution_drive_cycle'
+tou_file = 'full_data.csv'
+tou_subdir = 'data/TOU_Data'
+
+simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
+simulation_obj.plugged_in()
+simulation_obj.plugged_in()
+
+# previous_ev_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-25 23:59:59'))
+# predicted_tou_data = simulation_obj.get_tou_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-26 23:30:00'))
+# ev_consumption_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-26 00:00:00'), end_time=pd.to_datetime('2019-09-26 23:59:59'))
+# # recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data)
+# print(previous_ev_data.iloc[-1, :].name)
+# simulation_obj.tou_obj.time_idx_TOU_price.columns = ['TOU']
+# print(simulation_obj.tou_obj.time_idx_TOU_price.iloc[0,:])
+# print(hi)
+# TOU_data = predicted_tou_data.loc[previous_ev_data.iloc[-1, :].name:, :]
+

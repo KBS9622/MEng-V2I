@@ -7,7 +7,7 @@
 
     "_comment2" : "User defined parameter",
     "Charger_power" : 3000,
-    "TOU_threshold" : 11,
+    "TOU_threshold" : 0,
     "Lower_buffer" : 20,
     "Upper_buffer" : 74,
     "Emergency_reserves" : 0,
