@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import json
 
 
 class EV(object):
@@ -31,10 +32,11 @@ class EV(object):
 
     data = None
 
-    def __init__(self, file_name, subdir='', c_file_name='EV_characteristics.csv', choice=None):
+    def __init__(self, file_name, subdir, config_path, c_file_name='EV_characteristics.csv', choice=None):
 
         self.file_name = file_name
         self.subdir = subdir
+        self.config_path = config_path
         self.c_file_name = c_file_name  # EV characteristics file name
         self.choice = choice
         self.data = self.format_EV_data()
@@ -51,8 +53,6 @@ class EV(object):
         self.C_D = self.EV['C_D']
         self.n_driveline = self.EV['n_driveline']
         self.n_electric_motor = self.EV['n_electric_motor']
-        self.capacity = self.EV['capacity']
-        self.charge_lvl = self.capacity * (50 / 100)  # battery is 50% charged initially
 
         self.calculate_energy_consumption()
 
@@ -140,7 +140,7 @@ class EV(object):
 
     def regen_braking(self):
         """
-        Calculates the energy consumption (with regenerative braking efficiency, auxiliary loads and model error included)
+        Calculates the energy consumption (with regenerative braking efficiency, auxiliary loads, model error and battery efficiencies included)
         trend and plots it against time
         :param data: data in DataFrame
         :return: data in DataFrame with 3 new columns: regenerative braking efficiency,
@@ -162,36 +162,66 @@ class EV(object):
         pos_energy_consumption.where(self.data['accel_mps2'] >= 0, other=0, inplace=True)
         self.data['P_regen'] += pos_energy_consumption
 
-        # add the energy consumption of auxiliary loads and model error
+        # add the energy consumption of auxiliary loads, model error and battery efficiency
         auxiliary = 700  # Watts or Joules per second
         average_model_error = -5.9  # percent
-        self.data['P_total'] = (self.data['P_regen'] + auxiliary) * (100 + average_model_error) / 100
+        charging_battery_efficiency = 90
+        discharging_battery_efficiency = 90
+        self.data['P_total'] = ((self.data['P_regen'] + auxiliary) * (100 + average_model_error) / 100)/((charging_battery_efficiency/100)*(discharging_battery_efficiency/100))
 
-    def charge(self, power_in_joules):
+    def pull_user_config(self):
+        """
+        Method to update the variable self.config_dict with the new user configuration
+
+        :param data: config_path (the path for the JSON containing the user's system configuration)
+        :return: - 
+        """
+        # open the json file and load the object into a python dictionary
+        with open(self.config_path) as f:
+            self.config_dict = json.load(f)
+        # maybe have a seperate file to initialise config parameters based on user input, like calculating emergency reserves based on location
+
+    def push_user_config(self):
+        """
+        Method to update the json file with the new user configuration
+
+        :param data: - (because self.pull_user_config has already kept track of the file path)
+        :return: -
+        """
+        with open(self.config_path, 'w') as f:
+            json.dump(self.config_dict, f)
+
+    def charge(self, charge_time):
         """
         Method to charge EV battery, accounting for battery efficiency
-        :param data: power_in_joules [power (because data is measured every second)]
+        :param data: charge_time in minutes
         :return: new SOC for the EV object
         """
-        # REMEMBER: battery efficiency needs to be factored in when determining amount to charge in recommend method of charging_recommendation.py
-        # maximum SOC to ensure safe operation
-        max_soc = 95  # in %
-        max_charge_lvl = (max_soc / 100) * self.capacity
+        # get updated vehicle info
+        self.pull_user_config()
+        # maximum SOC to ensure safe operation (probably redundant unless recommend buffer fails)
+        max_soc = self.config_dict['Upper_buffer']  # in %
+        max_charge_lvl = (max_soc / 100) * self.config_dict['EV_info']['Capacity']
+
+        power_in_joules = self.config_dict['Charger_power'] * charge_time * 60
 
         n_battery = 90  # battery efficiency
         Wh_to_J = 3600
-        power = (power_in_joules / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
+        power = (power_in_joules / Wh_to_J) * (n_battery / 100)  # convert joules to Wh
 
-        if (max_charge_lvl - self.charge_lvl) >= power:
-            self.charge_lvl += power
+        if (max_charge_lvl - self.config_dict['Charge_level']) >= power:
+            self.config_dict['Charge_level'] += power
         else:
-            temp = self.charge_lvl + power - max_charge_lvl
+            temp = self.config_dict['Charge_level'] + power - max_charge_lvl
             self.excess += temp
             print('Battery is full, {} Wh of excess energy'.format(temp))
-            self.charge_lvl = max_charge_lvl
+            self.config_dict['Charge_level'] = max_charge_lvl
 
         # calculates the new instantaneous SOC
-        self.soc = (self.charge_lvl / self.capacity) * 100
+        self.config_dict['SOC'] = (self.config_dict['Charge_level'] / self.config_dict['EV_info']['Capacity']) * 100
+
+        # updates json
+        self.push_user_config()
 
     def discharge(self, power_in_joules):
         """
@@ -199,25 +229,33 @@ class EV(object):
         :param data: power (because data is measured every second)
         :return: new SOC for the EV object
         """
+        # get updated vehicle info
+        self.pull_user_config()
 
         # minimum SOC to ensure safe operation
-        min_soc = 20
-        min_charge_lvl = (min_soc / 100) * self.charge_lvl
+        min_soc = self.config_dict['Lower_buffer']
+        min_charge_lvl = (min_soc / 100) * self.config_dict['EV_info']['Capacity']
 
+        # MAYBE have n_battery as a feature in the EV model database (csv)
         n_battery = 90  # battery efficiency
         Wh_to_J = 3600
-        power = (power_in_joules / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
+        journey_power = power_in_joules * n_battery * n_battery # power needed to move EV excluding battery eff
+        # power deducted from battery, accounting for n_battery
+        power = (journey_power / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
 
-        if power > (self.charge_lvl - min_charge_lvl):
-            temp = power - (self.charge_lvl - min_charge_lvl)
+        if power > (self.config_dict['Charge_level'] - min_charge_lvl):
+            temp = power - (self.config_dict['Charge_level'] - min_charge_lvl)
             self.deficit += temp
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(temp))
-            self.charge_lvl = min_charge_lvl
+            self.config_dict['Charge_level'] = min_charge_lvl
         else:
-            self.charge_lvl -= power
+            self.config_dict['Charge_level'] -= power
 
         # calculates the new instantaneous SOC
-        self.soc = (self.charge_lvl / self.capacity) * 100
+        self.config_dict['SOC'] = (self.config_dict['Charge_level'] / self.config_dict['EV_info']['Capacity']) * 100
+
+        # updates json
+        self.push_user_config()
 
     def soc_over_time(self):
         """
@@ -230,8 +268,8 @@ class EV(object):
         timeseries_charge_lvl = []
         for x in self.data['P_total']:
             self.discharge(x)
-            timeseries_soc.append(self.soc)
-            timeseries_charge_lvl.append(self.charge_lvl)
+            timeseries_soc.append(self.config_dict['SOC'])
+            timeseries_charge_lvl.append(self.config_dict['Charge_level'])
         self.data['soc'] = timeseries_soc
         self.data['charge_lvl'] = timeseries_charge_lvl
 

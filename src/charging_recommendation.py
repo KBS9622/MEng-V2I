@@ -41,7 +41,7 @@ class charging_recommendation(object):
         """
         self.TOU_data = new_TOU_data
 
-    def update_user_config(self, config_path):
+    def pull_user_config(self, config_path):
         """
         Method to update the variable self.config_dict with the new user configuration
 
@@ -146,7 +146,7 @@ class charging_recommendation(object):
 
             # calculate total energy consumption for the journey
             journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
-            print('journey energy consumption: {}'.format(journey_energy_consumption))
+            print('journey energy consumption: {}'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -158,7 +158,7 @@ class charging_recommendation(object):
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
-            print('expected charge: {}'.format(expected_charge))
+            print('expected charge: {}'.format(expected_charge/3600))
 
             charge_time = journey_energy_consumption / (self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 
@@ -169,7 +169,7 @@ class charging_recommendation(object):
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
-            print(free_time_slots)
+            # print(free_time_slots)
 
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):

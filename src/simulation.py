@@ -6,12 +6,13 @@ from pandas.tseries.offsets import DateOffset
 
 
 class Simulation:
-    def __init__(self, drive_cycle_file, drive_cycle_subdir, tou_file, tou_subdir, train_tou):
+    def __init__(self, drive_cycle_file, drive_cycle_subdir, config_path, tou_file, tou_subdir, train_tou):
         self.min_tou_threshold = 0
         self.tou_obj = TOU(tou_file, tou_subdir)
         if train_tou:
             self.tou_obj.create_and_fit_model()
-        self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir)
+        self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir, config_path)
+        self.config_path = config_path
         self.beginning_of_time = pd.to_datetime('2019-09-25 00:00:00')
         self.start_next_day = self.beginning_of_time
 
@@ -27,7 +28,11 @@ class Simulation:
         """
 
         self.start_next_day += pd.DateOffset(1)
-        print(self.run_recommendation_algorithm())
+        recommended_slots = self.run_recommendation_algorithm()
+        print(recommended_slots)
+        total_charge_time = sum(recommended_slots)
+        print(total_charge_time)
+        self.ev_obj.charge(total_charge_time)
 
     def create_recommendation_obj(self):
         previous_ev_data = self.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'),
@@ -58,8 +63,7 @@ class Simulation:
                 end_time=tou_end_time))
         else:
             self.recommendation_obj = self.create_recommendation_obj()
-        json_path = './utils/user_config.json'
-        self.recommendation_obj.update_user_config(json_path)
+        self.recommendation_obj.pull_user_config(self.config_path)
         return self.recommendation_obj.recommend()
 
     def get_ev_data(self, start_time, end_time):
