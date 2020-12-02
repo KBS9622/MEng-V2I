@@ -33,13 +33,13 @@ class EV(object):
     data = None
 
     def __init__(self, file_name, subdir, config_path, c_file_name='EV_characteristics.csv', choice=None):
-
         self.file_name = file_name
         self.subdir = subdir
         self.config_path = config_path
         self.c_file_name = c_file_name  # EV characteristics file name
         self.choice = choice
         self.data = self.format_EV_data()
+        self.pull_user_config()
 
         self.EV = self.EV_menu()
 
@@ -53,7 +53,7 @@ class EV(object):
         self.C_D = self.EV['C_D']
         self.n_driveline = self.EV['n_driveline']
         self.n_electric_motor = self.EV['n_electric_motor']
-
+        self.charging_battery_efficiency = self.config_dict["Charger_efficiency"]
         self.calculate_energy_consumption()
 
     def load_csv_data(self, file_name, subdir=''):
@@ -64,7 +64,7 @@ class EV(object):
         :return: extracted data in DataFrame
         """
 
-        file_dir = os.path.realpath('./'+subdir)
+        file_dir = os.path.realpath('./' + subdir)
         print(file_dir)
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
@@ -127,7 +127,7 @@ class EV(object):
         # Power required at the wheels
         self.data['P_wheels'] = (self.m * self.data['accel_mps2'] + self.m * self.g * np.cos(self.theta) *
                                  self.C_r * 1e-3 * (
-                                             self.c_1 * self.data['speed_mps'] + self.c_2)
+                                         self.c_1 * self.data['speed_mps'] + self.c_2)
                                  + 0.5 * self.rho_air * self.A_f * self.C_D * (self.data['speed_mps'] ** 2)
                                  + self.m * self.g * np.sin(self.theta)) * self.data['speed_mps']
 
@@ -165,9 +165,10 @@ class EV(object):
         # add the energy consumption of auxiliary loads, model error and battery efficiency
         auxiliary = 700  # Watts or Joules per second
         average_model_error = -5.9  # percent
-        charging_battery_efficiency = 90
         discharging_battery_efficiency = 90
-        self.data['P_total'] = ((self.data['P_regen'] + auxiliary) * (100 + average_model_error) / 100)/((charging_battery_efficiency/100)*(discharging_battery_efficiency/100))
+        self.data['P_total'] = ((self.data['P_regen'] + auxiliary) *
+                                (100 + average_model_error) / 100) / ((self.charging_battery_efficiency / 100) *
+                                                                      (discharging_battery_efficiency / 100))
 
     def pull_user_config(self):
         """
@@ -194,7 +195,7 @@ class EV(object):
     def charge(self, charge_time):
         """
         Method to charge EV battery, accounting for battery efficiency
-        :param data: charge_time in minutes
+        :param charge_time: charge_time in minutes
         :return: new SOC for the EV object
         """
         # get updated vehicle info
@@ -239,7 +240,8 @@ class EV(object):
         # MAYBE have n_battery as a feature in the EV model database (csv)
         n_battery = 90  # battery efficiency
         Wh_to_J = 3600
-        journey_power = power_in_joules * n_battery * n_battery # power needed to move EV excluding battery eff
+        journey_power = power_in_joules * (n_battery / 100) * (
+                    self.charging_battery_efficiency / 100)  # power needed to move EV excluding battery eff
         # power deducted from battery, accounting for n_battery
         power = (journey_power / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
 

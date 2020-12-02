@@ -133,6 +133,7 @@ class charging_recommendation(object):
         available_charge = initial_charge - lower_limit
         expected_charge = initial_charge
 
+
         # Copy the TOU_data df and create two new columns to be filled
         temp_pred = self.TOU_data.copy()
         temp_pred['charging'] = 0
@@ -193,7 +194,7 @@ class charging_recommendation(object):
 
         # add TOU and SOC (charge level) consideration here (Boon)
         # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
-        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30  # in J for each 30 min timeslot
+        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * self.config_dict['Charger_efficiency'] # in J for each 30 min timeslot
         # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
         while expected_charge < upper_limit:
             # ignore any full slots and sort TOU slots by price

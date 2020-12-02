@@ -33,6 +33,21 @@ class Simulation:
         total_charge_time = sum(recommended_slots)
         print(total_charge_time)
         self.ev_obj.charge(total_charge_time)
+    
+    def trigger_discharge(self):
+        """
+        Reduce the charge level of battery by daily power consumption amount
+        :return:
+        """
+        print("Total Energy Consumed for day: ", self.start_next_day)
+        print(self.recommendation_obj.EV_data)
+        total_energy = sum(self.recommendation_obj.EV_data.loc[self.start_time:self.end_time]['P_total'])
+        print(total_energy)
+        Wh_to_J = 3600
+        power = (total_energy / Wh_to_J) * self.ev_obj.charging_battery_efficiency
+        print("Subtracting ", (power/1000), "kWh from battery")
+        #self.ev_obj.discharge(total_energy)
+        pass
 
     def create_recommendation_obj(self):
         previous_ev_data = self.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'),
@@ -97,7 +112,7 @@ class Simulation:
         # predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         # not using predicted, using actual values ... complete line 95 to do so
         self.format_tou_data()
-        predicted_tou = self.tou_obj.time_idx_TOU_price.loc[start_time:end_time,:]
+        predicted_tou = self.tou_obj.time_idx_TOU_price.loc[start_time:end_time, :]
         return predicted_tou
 
     def format_tou_data(self):
@@ -107,7 +122,6 @@ class Simulation:
         :return: 
         """
         self.tou_obj.time_idx_TOU_price.columns = ['TOU']
-
 
     def graph_plotter(self, file, subdir):
         """
