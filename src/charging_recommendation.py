@@ -147,7 +147,7 @@ class charging_recommendation(object):
 
             # calculate total energy consumption for the journey
             sum_of_P_total = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
-            journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules
+            journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules, this value is the value to be deducted from the battery 
             print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
@@ -165,6 +165,7 @@ class charging_recommendation(object):
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
             print('expected charge: {} Wh'.format(expected_charge/3600))
 
+            # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
             charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 
             # calculate number of time slots needed to charge EV
