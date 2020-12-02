@@ -45,7 +45,7 @@ class Simulation:
         print(total_energy)
         Wh_to_J = 3600
         power = (total_energy / Wh_to_J) * (self.ev_obj.charging_battery_efficiency/100)
-        print("Subtracting ", (power/1000), "kWh from battery")
+        print("Subtracting ", (power), "Wh from battery")
         self.ev_obj.discharge(total_energy)
 
     def create_recommendation_obj(self):
