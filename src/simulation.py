@@ -46,8 +46,7 @@ class Simulation:
         Wh_to_J = 3600
         power = (total_energy / Wh_to_J) * self.ev_obj.charging_battery_efficiency
         print("Subtracting ", (power/1000), "kWh from battery")
-        #self.ev_obj.discharge(total_energy)
-        pass
+        self.ev_obj.discharge(total_energy)
 
     def create_recommendation_obj(self):
         previous_ev_data = self.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'),

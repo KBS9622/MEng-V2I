@@ -146,8 +146,9 @@ class charging_recommendation(object):
         for start, end in zip(self.journey_start, self.journey_end):
 
             # calculate total energy consumption for the journey
-            journey_energy_consumption = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
-            print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption* 0.9/3600))
+            sum_of_P_total = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
+            journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules
+            print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -158,10 +159,13 @@ class charging_recommendation(object):
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
+                if journey_energy_consumption < 0.015:
+                    # this is to account for the difference in the decimal place that the JSON stores for charge level
+                    journey_energy_consumption = 0
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
-            print('expected charge: {} Wh'.format(expected_charge * 0.9/3600))
+            print('expected charge: {} Wh'.format(expected_charge/3600))
 
-            charge_time = journey_energy_consumption / (self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
+            charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 
             # calculate number of time slots needed to charge EV
             quotient = int(charge_time // 30)  # full slots
@@ -194,7 +198,7 @@ class charging_recommendation(object):
 
         # add TOU and SOC (charge level) consideration here (Boon)
         # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
-        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * self.config_dict['Charger_efficiency'] # in J for each 30 min timeslot
+        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (self.config_dict['Charger_efficiency']/100) # in J for each 30 min timeslot
         # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
         while expected_charge < upper_limit:
             # ignore any full slots and sort TOU slots by price

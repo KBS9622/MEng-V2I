@@ -6,8 +6,8 @@ import json
 
 
 class EV(object):
-    excess = None
-    deficit = None
+    excess = 0
+    deficit = 0
 
     g = 9.8066  # gravity (m/s)
     theta = 0  # road grade
@@ -245,10 +245,13 @@ class EV(object):
         # power deducted from battery, accounting for n_battery
         power = (journey_power / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
 
-        if power > (self.config_dict['Charge_level'] - min_charge_lvl):
+        if power > (self.config_dict['Charge_level'] - min_charge_lvl + 0.015):
             temp = power - (self.config_dict['Charge_level'] - min_charge_lvl)
             self.deficit += temp
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(temp))
+            self.config_dict['Charge_level'] = min_charge_lvl
+        elif power > (self.config_dict['Charge_level'] - min_charge_lvl):
+            # to account for the difference in the decimal place that the JSON stores for charge level
             self.config_dict['Charge_level'] = min_charge_lvl
         else:
             self.config_dict['Charge_level'] -= power
