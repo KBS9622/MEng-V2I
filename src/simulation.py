@@ -41,7 +41,7 @@ class Simulation:
         """
         print("Total Energy Consumed for day: ", self.start_next_day)
         print(self.recommendation_obj.EV_data)
-        total_energy = sum(self.recommendation_obj.EV_data.loc[self.start_time:self.end_time]['P_total'])
+        total_energy = self.recommendation_obj.EV_data['P_total'].sum()
         print(total_energy)
         Wh_to_J = 3600
         power = (total_energy / Wh_to_J) * self.ev_obj.charging_battery_efficiency
