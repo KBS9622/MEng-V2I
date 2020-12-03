@@ -65,7 +65,7 @@ class EV(object):
         """
 
         file_dir = os.path.realpath('./' + subdir)
-        print(file_dir)
+        # print(file_dir)
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
                 for name in files:

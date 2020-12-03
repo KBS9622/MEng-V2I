@@ -163,7 +163,7 @@ class charging_recommendation(object):
                     # this is to account for the difference in the decimal place that the JSON stores for charge level
                     journey_energy_consumption = 0
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
-            print('expected charge: {} Wh'.format(expected_charge/3600))
+            print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
             charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 

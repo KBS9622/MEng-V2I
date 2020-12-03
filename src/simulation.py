@@ -29,11 +29,23 @@ class Simulation:
 
         self.start_next_day += pd.DateOffset(1)
         recommended_slots = self.run_recommendation_algorithm()
-        print(recommended_slots)
         total_charge_time = sum(recommended_slots)
         print(total_charge_time)
         self.ev_obj.charge(total_charge_time)
-    
+        cost_for_period = self.calculate_cost(recommended_slots)
+        print(f"The total cost for charging session is: {cost_for_period} p ")
+
+    def calculate_cost(self, time_slots_charging):
+        time_to_grab = time_slots_charging.index.tolist()
+        df_price_per_kwh = self.recommendation_obj.TOU_data.loc[time_to_grab]
+        df_price_and_time = pd.concat([time_slots_charging, df_price_per_kwh], axis=1)
+        rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000
+        df_price_and_time["cost_per_time_slot (p)"] = (df_price_and_time['charging'] / 60) * rated_charging_power \
+                                                  * df_price_and_time['TOU']
+        print(df_price_and_time)
+        total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
+        return total_cost_day
+
     def trigger_discharge(self):
         """
         Reduce the charge level of battery by daily power consumption amount
@@ -44,7 +56,7 @@ class Simulation:
         total_energy = self.recommendation_obj.EV_data['P_total'].sum()
         print(total_energy)
         Wh_to_J = 3600
-        power = (total_energy / Wh_to_J) * (self.ev_obj.charging_battery_efficiency/100)
+        power = (total_energy / Wh_to_J) * (self.ev_obj.charging_battery_efficiency / 100)
         print("Subtracting ", (power), "Wh from battery")
         self.ev_obj.discharge(total_energy)
 
