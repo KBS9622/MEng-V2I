@@ -190,7 +190,7 @@ class EV(object):
         :return: -
         """
         with open(self.config_path, 'w') as f:
-            json.dump(self.config_dict, f)
+            json.dump(self.config_dict, f, indent=2)
 
     def charge(self, charge_time):
         """

@@ -81,7 +81,7 @@ json_path = ".\\utils\\user_config.json"
 
 simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
 simulation_obj.plugged_in()
-# simulation_obj.trigger_discharge()
+simulation_obj.trigger_discharge()
 # simulation_obj.plugged_in()
 
 # previous_ev_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-25 23:59:59'))
