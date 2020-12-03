@@ -55,7 +55,7 @@ class Simulation:
                                                end_time=pd.to_datetime('2019-09-26 23:30:00'))
         ev_consumption_data = self.get_ev_data(start_time=pd.to_datetime('2019-09-26 00:00:00'),
                                                end_time=pd.to_datetime('2019-09-26 23:59:59'))
-        recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data)
+        recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data, self.config_path)
         return recommendation_obj
 
     def run_recommendation_algorithm(self):
@@ -77,8 +77,12 @@ class Simulation:
                 end_time=tou_end_time))
         else:
             self.recommendation_obj = self.create_recommendation_obj()
-        self.recommendation_obj.pull_user_config(self.config_path)
-        return self.recommendation_obj.recommend()
+        self.recommendation_obj.pull_user_config()
+        print('Manual Override: ',self.recommendation_obj.config_dict['Manual_override'])
+        if self.recommendation_obj.config_dict['Manual_override']:
+            return self.recommendation_obj.uncontrolled()
+        else:
+            return self.recommendation_obj.recommend()
 
     def get_ev_data(self, start_time, end_time):
         return self.ev_obj.data.loc[start_time:end_time, :]

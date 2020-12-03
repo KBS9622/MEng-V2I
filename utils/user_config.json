@@ -1,1 +1,28 @@
-{"User_ID": "00000001", "_comment": "EV given parameters", "SOC": 28.503203766557444, "Charge_level": 5700.640753311489, "_comment2": "User defined parameter", "Charger_power": 3000, "TOU_threshold": 0, "Lower_buffer": 20, "Upper_buffer": 74, "Emergency_reserves": 0, "Home_location": "London", "Charger_efficiency": 90, "EV_info": {"Model": "", "Year": "", "Capacity": 20000}, "Manual_override": false, "System_consideration_span": 24, "Utilities_info": {"Supplier": "Octopus Energy", "Tariff": "Agile rates", "API": ""}, "_comment3": "System defined parameters", "EV_energy_efficiency": ""}
+{
+  "User_ID": "00000001",
+  "_comment": "EV given parameters",
+  "SOC": 20.0,
+  "Charge_level": 4000.0,
+  "_comment2": "User defined parameter",
+  "Charger_power": 3000,
+  "TOU_threshold": 0,
+  "Lower_buffer": 20,
+  "Upper_buffer": 74,
+  "Emergency_reserves": 0,
+  "Home_location": "London",
+  "Charger_efficiency": 90,
+  "EV_info": {
+    "Model": "",
+    "Year": "",
+    "Capacity": 20000
+  },
+  "Manual_override": false,
+  "System_consideration_span": 24,
+  "Utilities_info": {
+    "Supplier": "Octopus Energy",
+    "Tariff": "Agile rates",
+    "API": ""
+  },
+  "_comment3": "System defined parameters",
+  "EV_energy_efficiency": ""
+}

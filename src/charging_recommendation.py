@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 class charging_recommendation(object):
 
-    def __init__(self, EV_data, TOU_data, previous_EV_data):
+    def __init__(self, EV_data, TOU_data, previous_EV_data, config_path):
         self.EV_data = EV_data
         # self.TOU_data = TOU_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
@@ -14,6 +14,7 @@ class charging_recommendation(object):
         # if system inputs the starting scenario, then create these variables
         # must input starting scenario when creating object
         self.previous_end = [previous_EV_data.iloc[-1, :].name]
+        self.config_path = config_path
         #temp code:
         self.TOU_data = TOU_data.loc[previous_EV_data.iloc[-1, :].name:, :]
 
@@ -41,7 +42,7 @@ class charging_recommendation(object):
         """
         self.TOU_data = new_TOU_data
 
-    def pull_user_config(self, config_path):
+    def pull_user_config(self):
         """
         Method to update the variable self.config_dict with the new user configuration
 
@@ -49,7 +50,7 @@ class charging_recommendation(object):
         :return: -
         """
         # open the json file and load the object into a python dictionary
-        with open(config_path) as f:
+        with open(self.config_path) as f:
             self.config_dict = json.load(f)
         # maybe have a seperate file to initialise config parameters based on user input, like calculating emergency reserves based on location
 
@@ -87,12 +88,6 @@ class charging_recommendation(object):
         
         for start, end in zip(self.journey_start, self.journey_end):
 
-            # TEMPORARY CODE:
-            # UNCOMMENT line below if (assumption: EV available to charge BEFORE first journey and AFTER last journey of the day)
-            if prev_end:
-                if prev_end.date() == start.date():
-                    pred.loc[np.logical_and(pred.index >= prev_end_time_slot, pred.index < start.ceil(freq='30min')), ['charging', 'journey']] = 30
-
             # find correct time slots for start and end points
             start_time_slot = start.floor(freq='30min')
             end_time_slot = end.floor(freq='30min')
@@ -106,6 +101,12 @@ class charging_recommendation(object):
             else:
                 pred.loc[start_time_slot, ['charging', 'journey']] += (start.ceil(freq='30min') - start).seconds / 60
                 pred.loc[end_time_slot, ['charging', 'journey']] += (end - end_time_slot).seconds / 60
+
+            # TEMPORARY CODE:
+            # UNCOMMENT line below if (assumption: EV available to charge BEFORE first journey and AFTER last journey of the day)
+            if prev_end:
+                if prev_end.date() == start.date():
+                    pred.loc[np.logical_and(pred.index >= prev_end_time_slot, pred.index < start.ceil(freq='30min')), ['charging', 'journey']] = 30
             
             # TEMPORARY CODE:
             # COMMENT lines below if (assumption: EV available to charge when EV is stationary)
@@ -114,11 +115,76 @@ class charging_recommendation(object):
 
         return pred
 
+    def fill_in_timeslot(self, charge_time, free_time_slots, pred):
+        """
+        Method to fill in charging time slots based on charge_time
+
+        :param data: charge_time (in mins), free_time_slots (the available charging timeslots), pred (all timeslots of the prediction span)
+        :return: pred with the charging time allocated
+        """
+        # calculate number of time slots needed to charge EV
+        quotient = int(charge_time // 30)  # full slots
+        remainder = charge_time % 30
+
+        # fill in slots based on the quotient and remainder
+        remainder += sum(free_time_slots.iloc[list(range(0, quotient))]['charging'])
+        if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
+        idx_offset = 0
+        while remainder != 0:
+            remainder += free_time_slots.iloc[quotient + idx_offset]['charging']
+            if remainder >= 30:
+                pred.loc[free_time_slots.iloc[quotient + idx_offset].name, 'charging'] = 30
+                remainder -= 30
+            else:
+                pred.loc[free_time_slots.iloc[quotient + idx_offset].name, 'charging'] = remainder
+                remainder = 0
+
+            idx_offset += 1
+        
+        return pred
+
+    def uncontrolled(self):
+        """
+        Method to immitate uncontrolled charging
+
+        :param data: -
+        :return: uncontroled charging slots
+        """
+        Wh_to_J = 3600
+        SOC_threshold = 50
+        charge_threshold = (SOC_threshold/100) * self.config_dict['EV_info']['Capacity']
+        amount_to_charge = self.config_dict['EV_info']['Capacity'] - self.config_dict['Charge_level']
+
+        # Copy the TOU_data df and create two new columns to be filled
+        temp_pred = self.TOU_data.copy()
+        temp_pred['charging'] = 0
+        temp_pred['journey'] = 0
+        pred = self.charging_slot_availability(pred = temp_pred)
+
+        if self.config_dict['Charge_level'] < charge_threshold:
+            charge_time = amount_to_charge * Wh_to_J / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)
+            start = self.journey_start[0]
+            # ignore any full slots and sort TOU slots by price
+            free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
+
+            # exception handling
+            if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
+                print('Not enough time slots to charge')
+                return None
+
+            pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
+        # subtract journey time from charging time
+        pred['charging'] -= pred['journey']
+        self.EV_data['charging'] = pred['charging']
+
+        return pred.loc[pred['charging'] > 0, 'charging']
+
+
     def recommend(self):
         """
         Method to recommend charging times (Scheduler Module)
 
-        :param data: JSON containing configuration parameters
+        :param data: -
         :return: recommmended charging slots
         """
         # **** maybe before the system runs the scheduler, it should use API to request up to date info from EV, like SOC and charge level
@@ -168,10 +234,6 @@ class charging_recommendation(object):
             # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
             charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
 
-            # calculate number of time slots needed to charge EV
-            quotient = int(charge_time // 30)  # full slots
-            remainder = charge_time % 30
-
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
@@ -182,20 +244,7 @@ class charging_recommendation(object):
                 print('Not enough time slots to charge')
                 return None
 
-            # fill in slots based on the quotient and remainder
-            remainder += sum(free_time_slots.iloc[list(range(0, quotient))]['charging'])
-            if quotient > 0: pred.loc[free_time_slots.iloc[list(range(0, quotient))].index, 'charging'] = 30
-            idx_offset = 0
-            while remainder != 0:
-                remainder += free_time_slots.iloc[quotient + idx_offset]['charging']
-                if remainder >= 30:
-                    pred.loc[free_time_slots.iloc[quotient + idx_offset].name, 'charging'] = 30
-                    remainder -= 30
-                else:
-                    pred.loc[free_time_slots.iloc[quotient + idx_offset].name, 'charging'] = remainder
-                    remainder = 0
-
-                idx_offset += 1
+            pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
 
         # add TOU and SOC (charge level) consideration here (Boon)
         # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
