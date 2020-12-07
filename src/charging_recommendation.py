@@ -167,6 +167,7 @@ class charging_recommendation(object):
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
 
+            #Note: if not enough time slots, charge until plug out time
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
@@ -214,7 +215,7 @@ class charging_recommendation(object):
             # calculate total energy consumption for the journey
             sum_of_P_total = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
             journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules, this value is the value to be deducted from the battery 
-            print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
+            # print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -229,7 +230,7 @@ class charging_recommendation(object):
                     # this is to account for the difference in the decimal place that the JSON stores for charge level
                     journey_energy_consumption = 0
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
-            print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
+            # print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
             # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
             charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes

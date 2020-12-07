@@ -30,7 +30,7 @@ class Simulation:
         self.start_next_day += pd.DateOffset(1)
         recommended_slots = self.run_recommendation_algorithm()
         total_charge_time = sum(recommended_slots)
-        print(total_charge_time)
+        # print(total_charge_time)
         self.ev_obj.charge(total_charge_time)
         cost_for_period = self.calculate_cost(recommended_slots)
         print(f"The total cost for charging session is: {cost_for_period} p ")
@@ -42,7 +42,7 @@ class Simulation:
         rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000
         df_price_and_time["cost_per_time_slot (p)"] = (df_price_and_time['charging'] / 60) * rated_charging_power \
                                                   * df_price_and_time['TOU']
-        print(df_price_and_time)
+        # print(df_price_and_time)
         total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
         return total_cost_day
 
@@ -52,7 +52,7 @@ class Simulation:
         :return:
         """
         print("Total Energy Consumed for day: ", self.start_next_day)
-        print(self.recommendation_obj.EV_data)
+        # print(self.recommendation_obj.EV_data)
         total_energy = self.recommendation_obj.EV_data['P_total'].sum()
         print(total_energy)
         Wh_to_J = 3600

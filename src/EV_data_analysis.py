@@ -233,9 +233,7 @@ class EV(object):
         # get updated vehicle info
         self.pull_user_config()
 
-        # minimum SOC to ensure safe operation
-        min_soc = self.config_dict['Lower_buffer']
-        min_charge_lvl = (min_soc / 100) * self.config_dict['EV_info']['Capacity']
+        min_charge_lvl = 0
 
         # MAYBE have n_battery as a feature in the EV model database (csv)
         n_battery = 90  # battery efficiency
