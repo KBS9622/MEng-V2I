@@ -154,6 +154,7 @@ class charging_recommendation(object):
         SOC_threshold = 50
         charge_threshold = (SOC_threshold/100) * self.config_dict['EV_info']['Capacity']
         amount_to_charge = self.config_dict['EV_info']['Capacity'] - self.config_dict['Charge_level']
+        time_to_stop_charging = 30 #system should stop charging 30 min prior to next journey, for error purposes
 
         # Copy the TOU_data df and create two new columns to be filled
         temp_pred = self.TOU_data.copy()
@@ -164,14 +165,20 @@ class charging_recommendation(object):
         if self.config_dict['Charge_level'] < charge_threshold:
             charge_time = amount_to_charge * Wh_to_J / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)
             start = self.journey_start[0]
-            # ignore any full slots and sort TOU slots by price
-            free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
+            # ignore any full slots
+            free_time_slots = pred.loc[np.logical_and(pred.index < start-timedelta(minutes=time_to_stop_charging), pred['charging'] < 30)].copy()
 
             #Note: if not enough time slots, charge until plug out time
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
-                return None
+                charge_time = (30 * len(free_time_slots)) - sum(free_time_slots['charging']) 
+                print('charging for : {} mins'.format(charge_time))
+                pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
+                pred['charging'] -= pred['journey']
+                self.EV_data['charging'] = pred['charging']
+
+                return pred.loc[pred['charging'] > 0, 'charging']
 
             pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
         # subtract journey time from charging time

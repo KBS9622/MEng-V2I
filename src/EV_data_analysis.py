@@ -201,7 +201,7 @@ class EV(object):
         # get updated vehicle info
         self.pull_user_config()
         # maximum SOC to ensure safe operation (probably redundant unless recommend buffer fails)
-        max_soc = self.config_dict['Upper_buffer']  # in %
+        max_soc = 100  # in %
         max_charge_lvl = (max_soc / 100) * self.config_dict['EV_info']['Capacity']
 
         power_in_joules = self.config_dict['Charger_power'] * charge_time * 60
