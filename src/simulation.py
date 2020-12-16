@@ -12,7 +12,7 @@ class Simulation:
             self.tou_obj.create_and_fit_model()
         self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir, config_path)
         self.config_path = config_path
-        self.beginning_of_time = pd.to_datetime('2019-10-07 00:00:00')
+        self.beginning_of_time = pd.to_datetime('2019-11-01 00:00:00')
         self.start_next_day = self.beginning_of_time
         self.energy_bought = []
         self.energy_cost = []
