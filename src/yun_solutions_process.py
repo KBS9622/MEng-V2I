@@ -45,11 +45,18 @@ if __name__ == "__main__":
     
     df['acceleration'] = (df['speed']-df['speed'].shift(1))/df['timestep']
     df.loc[0,'acceleration'] = 0
+    # the speed column is in km/h whereas acceleration column is in km/h/s, need to convert both to m/s and m/s^2 respectively
+    kmph_to_mps = 3.6
+    df['speed_mps'] = df['speed']/kmph_to_mps
+    df['accel_mps2'] = df['acceleration']/kmph_to_mps
+
     df = df.set_index('timestamp')
     print(df)
-    cols_to_drop = ['timeStamp', 'timestep', 'index']
+    cols_to_drop = ['timeStamp', 'timestep', 'index', 'speed', 'acceleration']
     df = df.drop(columns=cols_to_drop)
     
+    
+
     print(df)
 
 #need to remove duplicate timestamps and create acceleration column
