@@ -1,8 +1,8 @@
 {
   "User_ID": "00000001",
   "_comment": "EV given parameters",
-  "SOC": 82.9429332844619,
-  "Charge_level": 27371.16798387243,
+  "SOC": 34.47035658875195,
+  "Charge_level": 6480.427038685367,
   "_comment2": "User defined parameter",
   "Charger_power": 3000,
   "TOU_threshold": 0,
@@ -14,7 +14,7 @@
   "EV_info": {
     "Model": "",
     "Year": "",
-    "Capacity": 33000
+    "Capacity": 18800
   },
   "Manual_override": true,
   "System_consideration_span": 24,
