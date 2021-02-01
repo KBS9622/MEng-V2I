@@ -142,11 +142,12 @@ class Simulation:
 
     def format_ev_data(self, beginning_of_time):
         """
-        
-        :return: 
+        removes unnecesary columns from dataframe 'data' of class 'EV' object
+        :return: dataframe which contains only desired column(s) ('P_total' and timestamped index)
         """
+        # determines columns to drop that are of no use for recommendation algorithm (columns that were used by ECM to calculate 'P_total')
         cols_to_drop = ['speed_mps', 'accel_mps2', 'P_wheels', 'P_electric_motor', 'n_rb', 'P_regen']
-
+        # copies the current dataframe 'data' in ev_obj and drops columns then indexes with timestamps
         p_total = self.ev_obj.data.copy()
         p_total = p_total.drop(columns=cols_to_drop)
         p_total = p_total.set_index('timestamp')
@@ -158,16 +159,18 @@ class Simulation:
     def get_tou_data(self, start_time=pd.to_datetime('2019-01-31 00:00:00'),
                      end_time=pd.to_datetime('2019-01-31 23:30:00')):
         """
-        
+        gets the slots of tou price data indicated by the start_time and end_time
         :param start_time: 
         :param end_time: 
-        :return: 
+        :return: dataframe of tou prices from start_time to end_time
         """
         self.start_time = start_time
         self.end_time = end_time
+        # BOON: this will probably be where we use heejoon's prediction method/function
         # predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         # not using predicted, using actual values ... complete line 95 to do so
-        self.format_tou_data()
+        self.format_tou_data() # adds column names for when using actual prices, comment if using predicted prices
+        # gets the tou prices from start_time to end_time
         predicted_tou = self.tou_obj.time_idx_TOU_price.loc[start_time:end_time, :]
         return predicted_tou
 
@@ -177,11 +180,12 @@ class Simulation:
         :param : 
         :return: 
         """
+        # labels the column
         self.tou_obj.time_idx_TOU_price.columns = ['TOU']
 
     def graph_plotter(self, file, subdir):
         """
-        
+        plots all the features indicated by variable 'y' and saves the graphs
         :return: 
         """
         y = ['P_electric_motor', 'speed_mps', 'P_regen', 'n_rb', 'soc', 'P_total']
