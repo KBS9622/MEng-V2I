@@ -1,8 +1,8 @@
 {
   "User_ID": "00000001",
   "_comment": "EV given parameters",
-  "SOC": 34.47035658875195,
-  "Charge_level": 6480.427038685367,
+  "SOC": 38.45165447736639,
+  "Charge_level": 7228.911041744882,
   "_comment2": "User defined parameter",
   "Charger_power": 3000,
   "TOU_threshold": 0,

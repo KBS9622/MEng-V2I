@@ -24,28 +24,41 @@ class Simulation:
 
     def plugged_in(self):
         """
-        
+        Signifies that the EV is plugged in, adds 1 day to start_next_day index and call method run_recommendation_algorithm()
         :return: 
         """
-
+        # Add 1 day to start_next_day index
         self.start_next_day += pd.DateOffset(1)
+        #call method run_recommendation_algorithm()
         recommended_slots = self.run_recommendation_algorithm()
+        # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
         # print(total_charge_time)
         self.ev_obj.charge(total_charge_time)
+        # calls method calculate_cost_and_energy()
         df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
+        # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
         print(f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
         print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
         self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
         self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
 
     def calculate_cost_and_energy(self, time_slots_charging):
+        """
+        grabs corresponding energy prices for allocated charging slots and 
+        calculates energy bought per slot with charger power and cost of the energy per slot
+        :return: timestamp indexed dataframe with 4 columns (charging[charge time allocated], TOU[price of energy], energy_per_time_slot (kWh), cost_per_time_slot (p))
+        """
+        # determines the timeslots where charging is scheduled for and gets corresponding TOU prices for those timeslots
         time_to_grab = time_slots_charging.index.tolist()
         df_price_per_kwh = self.recommendation_obj.TOU_data.loc[time_to_grab]
+        # concatenates allocated charging time and TOU prices into a new df variable
         df_price_and_time = pd.concat([time_slots_charging, df_price_per_kwh], axis=1)
+        # uses charger power to determine energy bought per slot and then calculate cost of buying that energy per slot
         rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000 #in kW
         df_price_and_time["energy_per_time_slot (kWh)"] = (df_price_and_time['charging'] / 60) * rated_charging_power
         df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * df_price_and_time['TOU']
+
         print(df_price_and_time)
         # total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
         return df_price_and_time
@@ -55,16 +68,24 @@ class Simulation:
         Reduce the charge level of battery by daily power consumption amount
         :return:
         """
+        # calculates and print the total energy needed by EV to move as described by drive cycle, accounting for charging AND discharging efficiencies
         print("Total Energy Consumed for day: ", self.start_next_day)
-        # print(self.recommendation_obj.EV_data)
+        print(self.recommendation_obj.EV_data)
         total_energy = self.recommendation_obj.EV_data['P_total'].sum()
         print(total_energy)
+        # converts the sum from above to Wh and removes battery charging efficiency to SHOW how many Wh to deduct from battery (as P_total accounts for both battery efficiencies)
         Wh_to_J = 3600
         power = (total_energy / Wh_to_J) * (self.ev_obj.charging_battery_efficiency / 100)
         print("Subtracting ", (power), "Wh from battery")
+        # calls method discharge() from ev_obj (an object of class EV)
+        # Note: the method below uses 'total_energy' instead of the variable 'power' that was calculated above
         self.ev_obj.discharge(total_energy)
 
     def create_recommendation_obj(self):
+        """
+        
+        :return: 
+        """
         previous_ev_data = self.get_ev_data(start_time=self.beginning_of_time,
                                             end_time=self.beginning_of_time + pd.offsets.Hour(24) - pd.offsets.Second(1))
         predicted_tou_data = self.get_tou_data(start_time=self.beginning_of_time,
@@ -157,6 +178,6 @@ class Simulation:
         
         :return: 
         """
-        without_recommendation = ''
+        with_recommendation = ''
         without_recommendation = ''
         pass

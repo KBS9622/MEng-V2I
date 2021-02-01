@@ -162,13 +162,14 @@ class EV(object):
         pos_energy_consumption.where(self.data['accel_mps2'] >= 0, other=0, inplace=True)
         self.data['P_regen'] += pos_energy_consumption
 
-        # add the energy consumption of auxiliary loads, model error and battery efficiency
+        # add the energy consumption of auxiliary loads, model error and battery charging AND discharging efficiencies
         auxiliary = 700  # Watts or Joules per second
         average_model_error = -5.9  # percent
         discharging_battery_efficiency = 90
         self.data['P_total'] = ((self.data['P_regen'] + auxiliary) *
                                 (100 + average_model_error) / 100) / ((self.charging_battery_efficiency / 100) *
                                                                       (discharging_battery_efficiency / 100))
+        # P_total represents the amount of energy that is bought from the grid to ensure EV can perform (including ALL efficiencies)
 
     def pull_user_config(self):
         """
@@ -227,7 +228,7 @@ class EV(object):
     def discharge(self, power_in_joules):
         """
         Method to discharge EV battery, accounting for battery efficiency
-        :param data: power (because data is measured every second)
+        :param data: power including charging AND discharging efficiencies (because data is measured every second)
         :return: new SOC for the EV object
         """
         # get updated vehicle info
