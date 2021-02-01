@@ -83,45 +83,61 @@ class Simulation:
 
     def create_recommendation_obj(self):
         """
-        
-        :return: 
+        creates a recommendation object which needs to load in the 'previous day' drive cycle, 'predicted' drive cycle and tou for those period
+        * this method should only be called once, to create the initial object
+        :return: object of class 'charging_recommendation'
         """
+        # gets ev data for previous day (to determine when EV is home, for charging recommendation)
         previous_ev_data = self.get_ev_data(start_time=self.beginning_of_time,
                                             end_time=self.beginning_of_time + pd.offsets.Hour(24) - pd.offsets.Second(1))
+        # get tou data ranging from before EV reaches home until the end of the predicted drive cycle
+        # BOON: this may be where we need to modify to integrate drive cycle forecast module
         predicted_tou_data = self.get_tou_data(start_time=self.beginning_of_time,
                                                end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Minute(30))
+        # gets the next day drive cycle (which should be predicted by the drive cycle forecast module)
         ev_consumption_data = self.get_ev_data(start_time=self.beginning_of_time + pd.offsets.Hour(24),
                                                end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Second(1))
+        # calls constructor for class 'charging_recommendation'
         recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data, self.config_path)
         return recommendation_obj
 
     def run_recommendation_algorithm(self):
         """
-        
-        :return: 
+        creates/updates 'charging_recommendation' object, then run the recommendation algorithms based on user configuration
+        :return: 'charging_recommendation' object with variables updated with allocated charging slots and etc
         """
         start_time = self.start_next_day
         end_time = self.start_next_day + pd.offsets.Hour(24) - pd.offsets.Second(1)
+        # if recommendation object already exist
         if self.recommendation_obj:
+            # calls method 'set_EV_data' to update 'predicted' drive cycle
             self.recommendation_obj.set_EV_data(self.get_ev_data(
                 start_time=start_time,
                 end_time=end_time))
-
+            # determine the end range of TOU feed in
             tou_end_time = self.recommendation_obj.charging_time_start.replace(hour=23, minute=30, second=0) + \
                            pd.DateOffset(1)
+            # calls method 'set_TOU_data' to update future TOU prices
             self.recommendation_obj.set_TOU_data(self.get_tou_data(
                 start_time=self.recommendation_obj.charging_time_start,
                 end_time=tou_end_time))
         else:
+            # create a new recommendation object if it does not exist
             self.recommendation_obj = self.create_recommendation_obj()
+        # gets user configuration for system by calling method 'pull_user_config()
         self.recommendation_obj.pull_user_config()
         print('Manual Override: ',self.recommendation_obj.config_dict['Manual_override'])
+        # run uncontrolled charging if user chooses to manual override, otherwise run IntelliCharga algorithm
         if self.recommendation_obj.config_dict['Manual_override']:
             return self.recommendation_obj.uncontrolled()
         else:
             return self.recommendation_obj.recommend()
 
     def get_ev_data(self, start_time, end_time):
+        """
+        gets the slots of ev drive cycle data indicated by the start_time and end_time
+        :return: 'EV' object with updated drive cycle data
+        """
         return self.ev_obj.data.loc[start_time:end_time, :]
 
     def format_ev_data(self, beginning_of_time):
