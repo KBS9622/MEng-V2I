@@ -69,6 +69,7 @@ class Simulation:
         """
         # calculates and print the total energy needed by EV to move as described by drive cycle, accounting for charging AND discharging efficiencies
         print("Total Energy Consumed for day: ", self.start_next_day)
+        #BOON: right now it uses data in recommendation obj, which is predicted and not actual, therefore should use data from ev_obj
         print(self.recommendation_obj.EV_data)
         total_energy = self.recommendation_obj.EV_data['P_total'].sum()
         print(total_energy)
@@ -109,13 +110,13 @@ class Simulation:
         """
         start_time = self.start_next_day
         end_time = self.start_next_day + pd.offsets.Hour(24) - pd.offsets.Second(1)
+        previous_start_time = start_time - pd.DateOffset(1)
+        previous_end_time = end_time - pd.DateOffset(1)
         # if recommendation object already exist
         if self.recommendation_obj:
             # calls method 'set_EV_data' to update 'predicted' drive cycle
-            # BOON: this line will need to call the prediction* method and not the get_ev_data method
-            self.recommendation_obj.set_EV_data(self.get_ev_data(
-                start_time=start_time,
-                end_time=end_time))
+            # BOON: this line will need to call the predict_ev_data as first input!!!
+            self.recommendation_obj.set_EV_data(self.get_ev_data(start_time=start_time,end_time=end_time), self.get_ev_data(start_time=previous_start_time,end_time=previous_end_time))
             # determine the end range of TOU feed in
             tou_end_time = self.recommendation_obj.charging_time_start.replace(hour=23, minute=30, second=0) + \
                            pd.DateOffset(1)

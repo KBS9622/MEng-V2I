@@ -6,31 +6,37 @@ from datetime import datetime, timedelta
 
 class charging_recommendation(object):
 
-    def __init__(self, EV_data, TOU_data, previous_EV_data, config_path):
-        self.EV_data = EV_data
+    def __init__(self, predicted_EV_data, TOU_data, previous_EV_data, config_path):
+        self.predicted_EV_data = predicted_EV_data
         # self.TOU_data = TOU_data
-        self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
+        self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.predicted_EV_data)
         # self.previous_end = None
         # if system inputs the starting scenario, then create these variables
         # must input starting scenario when creating object
-        self.previous_end = [previous_EV_data.iloc[-1, :].name]
+        self.previous_EV_data = previous_EV_data
+        self.previous_end = [self.previous_EV_data.iloc[-1, :].name]
         self.config_path = config_path
         #temp code:
-        self.TOU_data = TOU_data.loc[previous_EV_data.iloc[-1, :].name:, :]
+        self.TOU_data = TOU_data.loc[self.previous_EV_data.iloc[-1, :].name:, :]
 
-    def set_EV_data(self, new_EV_data):
+    def set_EV_data(self, new_EV_data, previous_EV_data):
         """
-        Method to update the variable self.EV_Data and use self.EV_data to determine reference point for charging availability
+        Method to replace predicted EV data with ACTUAL EV data once available, to identify previous_end
+        update the variable self.predicted_EV_data and use self.predicted_EV_data to determine reference point for charging availability
         
         :param data: new_EV_data (the predicted drive cycle)
         :return: -
         """
         # we could have the 'user_config.json' determine the span of prediction and load drive cycles based on the span
         # BOON: there will be changes needed to this part so that previous_end is based on ACTUAL data but we can load in predicted data
-        self.previous_end = [self.EV_data.iloc[-1, :].name] #may need to change here, OR change entire recommend code to use a new variable
+        self.previous_EV_data = previous_EV_data
+        self.previous_end = [self.previous_EV_data.iloc[-1, :].name] # may need to predicted_EV_data (which is preditcted data) to REAL_EV_data 
+        print('hihi: {}'.format[self.previous_end])
+        # BOON: dude wtf is up with the variable not being used
         self.charging_time_start = self.journey_end[-1]
-        self.EV_data = new_EV_data
-        self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
+
+        self.predicted_EV_data = new_EV_data
+        self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.predicted_EV_data)
         self.charging_time_end = self.journey_start[0]
         #may need some work
 
@@ -177,14 +183,14 @@ class charging_recommendation(object):
                 print('charging for : {} mins'.format(charge_time))
                 pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
                 pred['charging'] -= pred['journey']
-                self.EV_data['charging'] = pred['charging']
+                self.predicted_EV_data['charging'] = pred['charging']
 
                 return pred.loc[pred['charging'] > 0, 'charging']
 
             pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']
-        self.EV_data['charging'] = pred['charging']
+        self.predicted_EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
 
@@ -221,7 +227,7 @@ class charging_recommendation(object):
         for start, end in zip(self.journey_start, self.journey_end):
 
             # calculate total energy consumption for the journey
-            sum_of_P_total = sum(self.EV_data.loc[start:end]['P_total'])  # given in Joules
+            sum_of_P_total = sum(self.predicted_EV_data.loc[start:end]['P_total'])  # given in Joules
             journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules, this value is the value to be deducted from the battery 
             # print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
@@ -299,6 +305,6 @@ class charging_recommendation(object):
 
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']
-        self.EV_data['charging'] = pred['charging']
+        self.predicted_EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
