@@ -33,7 +33,6 @@ class Simulation:
         recommended_slots = self.run_recommendation_algorithm()
         # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
-        # print(total_charge_time)
         self.ev_obj.charge(total_charge_time)
         # calls method calculate_cost_and_energy()
         df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
@@ -88,13 +87,15 @@ class Simulation:
         :return: object of class 'charging_recommendation'
         """
         # gets ev data for previous day (to determine when EV is home, for charging recommendation)
+        # BOON: this will be where ACTUAL drive cycle will be loaded since it is historic data
         previous_ev_data = self.get_ev_data(start_time=self.beginning_of_time,
                                             end_time=self.beginning_of_time + pd.offsets.Hour(24) - pd.offsets.Second(1))
         # get tou data ranging from before EV reaches home until the end of the predicted drive cycle
-        # BOON: this may be where we need to modify to integrate drive cycle forecast module
+        # BOON: this may be where we need to modify to integrate TOU forecast module
         predicted_tou_data = self.get_tou_data(start_time=self.beginning_of_time,
                                                end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Minute(30))
         # gets the next day drive cycle (which should be predicted by the drive cycle forecast module)
+        # BOON: this will be where we need to call the drive cycle prediction function (new method called 'predict_ev_data'?)
         ev_consumption_data = self.get_ev_data(start_time=self.beginning_of_time + pd.offsets.Hour(24),
                                                end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Second(1))
         # calls constructor for class 'charging_recommendation'
@@ -111,6 +112,7 @@ class Simulation:
         # if recommendation object already exist
         if self.recommendation_obj:
             # calls method 'set_EV_data' to update 'predicted' drive cycle
+            # BOON: this line will need to call the prediction* method and not the get_ev_data method
             self.recommendation_obj.set_EV_data(self.get_ev_data(
                 start_time=start_time,
                 end_time=end_time))
@@ -133,11 +135,24 @@ class Simulation:
         else:
             return self.recommendation_obj.recommend()
 
+    def predict_ev_data(self, start_time, end_time):
+        """
+        predicts the slots of ev drive cycle data indicated by the start_time and end_time
+        :return: 'EV' object with updated predicted drive cycle data
+        """
+        # BOON: this will probably be where we use Heejoon's prediction method/function
+        # maybe have this method trigger the prediction, then create a method that will load in the ACTUAL data for the rest of simulation
+        # eg: when actually DISCHARGING EV, it should be based on actual data and not predicted, as predicted is only for CHARGING
+        pass
+        # return self.ev_obj.data.loc[start_time:end_time, :]
+    
     def get_ev_data(self, start_time, end_time):
         """
         gets the slots of ev drive cycle data indicated by the start_time and end_time
         :return: 'EV' object with updated drive cycle data
         """
+        # this gets actual data, therefore may be useful to keep most of code the same and 
+        # only swap method calls for when the use of drive cycle data is for prediction/estimation
         return self.ev_obj.data.loc[start_time:end_time, :]
 
     def format_ev_data(self, beginning_of_time):
@@ -166,7 +181,7 @@ class Simulation:
         """
         self.start_time = start_time
         self.end_time = end_time
-        # BOON: this will probably be where we use heejoon's prediction method/function
+        # BOON: this will probably be where we use Atom's prediction method/function
         # predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         # not using predicted, using actual values ... complete line 95 to do so
         self.format_tou_data() # adds column names for when using actual prices, comment if using predicted prices

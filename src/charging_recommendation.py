@@ -25,7 +25,8 @@ class charging_recommendation(object):
         :param data: new_EV_data (the predicted drive cycle)
         :return: -
         """
-        # we could have the simulation file determine the span of prediction and load drive cycles based on the span
+        # we could have the 'user_config.json' determine the span of prediction and load drive cycles based on the span
+        # BOON: there will be changes needed to this part so that previous_end is based on ACTUAL data but we can load in predicted data
         self.previous_end = [self.EV_data.iloc[-1, :].name]
         self.charging_time_start = self.journey_end[-1]
         self.EV_data = new_EV_data
