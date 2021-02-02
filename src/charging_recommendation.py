@@ -27,7 +27,7 @@ class charging_recommendation(object):
         """
         # we could have the 'user_config.json' determine the span of prediction and load drive cycles based on the span
         # BOON: there will be changes needed to this part so that previous_end is based on ACTUAL data but we can load in predicted data
-        self.previous_end = [self.EV_data.iloc[-1, :].name]
+        self.previous_end = [self.EV_data.iloc[-1, :].name] #may need to change here, OR change entire recommend code to use a new variable
         self.charging_time_start = self.journey_end[-1]
         self.EV_data = new_EV_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.EV_data)
