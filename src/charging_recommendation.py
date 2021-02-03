@@ -16,7 +16,7 @@ class charging_recommendation(object):
         self.previous_EV_data = previous_EV_data
         self.previous_end = [self.previous_EV_data.iloc[-1, :].name]
         self.config_path = config_path
-        #temp code:
+        # temp code:
         self.TOU_data = TOU_data.loc[self.previous_EV_data.iloc[-1, :].name:, :]
 
     def set_EV_data(self, new_EV_data, previous_EV_data):
@@ -27,18 +27,16 @@ class charging_recommendation(object):
         :param data: new_EV_data (the predicted drive cycle)
         :return: -
         """
-        # we could have the 'user_config.json' determine the span of prediction and load drive cycles based on the span
-        # BOON: there will be changes needed to this part so that previous_end is based on ACTUAL data but we can load in predicted data
+        # we could have the 'user_config.json' determine the span of prediction and load drive cycles based on the
+        # span BOON: there will be changes needed to this part so that previous_end is based on ACTUAL data but we
+        # can load in predicted data
         self.previous_EV_data = previous_EV_data
-        self.previous_end = [self.previous_EV_data.iloc[-1, :].name] # may need to predicted_EV_data (which is preditcted data) to REAL_EV_data 
-        print('hihi: {}'.format[self.previous_end])
         # BOON: dude wtf is up with the variable not being used
-        self.charging_time_start = self.journey_end[-1]
-
+        self.charging_time_start = self.previous_EV_data.iloc[-1, :].name
         self.predicted_EV_data = new_EV_data
         self.journey_start, self.journey_end = self.find_journey_start_and_end_points(data=self.predicted_EV_data)
         self.charging_time_end = self.journey_start[0]
-        #may need some work
+        # may need some work
 
     def set_TOU_data(self, new_TOU_data):
         """
@@ -92,7 +90,7 @@ class charging_recommendation(object):
         :return: Filled out dataframe with timestamp and 3 columns (TOU price, charging, journey)
         """
         prev_end = None
-        
+
         for start, end in zip(self.journey_start, self.journey_end):
 
             # find correct time slots for start and end points
@@ -100,7 +98,8 @@ class charging_recommendation(object):
             end_time_slot = end.floor(freq='30min')
 
             # fully fill any time slots between start_time_slot and end_time_slot
-            pred.loc[np.logical_and(pred.index > start_time_slot, pred.index < end_time_slot), ['charging', 'journey']] = 30
+            pred.loc[
+                np.logical_and(pred.index > start_time_slot, pred.index < end_time_slot), ['charging', 'journey']] = 30
 
             # Partially fill start_time_slot and end_time_slot based on journey time
             if start_time_slot == end_time_slot:
@@ -113,8 +112,9 @@ class charging_recommendation(object):
             # UNCOMMENT line below if (assumption: EV available to charge BEFORE first journey and AFTER last journey of the day)
             if prev_end:
                 if prev_end.date() == start.date():
-                    pred.loc[np.logical_and(pred.index >= prev_end_time_slot, pred.index < start.ceil(freq='30min')), ['charging', 'journey']] = 30
-            
+                    pred.loc[np.logical_and(pred.index >= prev_end_time_slot, pred.index < start.ceil(freq='30min')), [
+                        'charging', 'journey']] = 30
+
             # TEMPORARY CODE:
             # COMMENT lines below if (assumption: EV available to charge when EV is stationary)
             prev_end = end
@@ -147,7 +147,7 @@ class charging_recommendation(object):
                 remainder = 0
 
             idx_offset += 1
-        
+
         return pred
 
     def uncontrolled(self):
@@ -159,27 +159,29 @@ class charging_recommendation(object):
         """
         Wh_to_J = 3600
         SOC_threshold = 50
-        charge_threshold = (SOC_threshold/100) * self.config_dict['EV_info']['Capacity']
+        charge_threshold = (SOC_threshold / 100) * self.config_dict['EV_info']['Capacity']
         amount_to_charge = self.config_dict['EV_info']['Capacity'] - self.config_dict['Charge_level']
-        time_to_stop_charging = 30 #system should stop charging 30 min prior to next journey, for error purposes
+        time_to_stop_charging = 30  # system should stop charging 30 min prior to next journey, for error purposes
 
         # Copy the TOU_data df and create two new columns to be filled
         temp_pred = self.TOU_data.copy()
         temp_pred['charging'] = 0
         temp_pred['journey'] = 0
-        pred = self.charging_slot_availability(pred = temp_pred)
+        pred = self.charging_slot_availability(pred=temp_pred)
 
         if self.config_dict['Charge_level'] < charge_threshold:
-            charge_time = amount_to_charge * Wh_to_J / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)
+            charge_time = amount_to_charge * Wh_to_J / (
+                        (self.config_dict['Charger_efficiency'] / 100) * self.config_dict['Charger_power'] * 60)
             start = self.journey_start[0]
             # ignore any full slots
-            free_time_slots = pred.loc[np.logical_and(pred.index < start-timedelta(minutes=time_to_stop_charging), pred['charging'] < 30)].copy()
+            free_time_slots = pred.loc[np.logical_and(pred.index < start - timedelta(minutes=time_to_stop_charging),
+                                                      pred['charging'] < 30)].copy()
 
-            #Note: if not enough time slots, charge until plug out time
+            # Note: if not enough time slots, charge until plug out time
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
-                charge_time = (30 * len(free_time_slots)) - sum(free_time_slots['charging']) 
+                charge_time = (30 * len(free_time_slots)) - sum(free_time_slots['charging'])
                 print('charging for : {} mins'.format(charge_time))
                 pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
                 pred['charging'] -= pred['journey']
@@ -194,7 +196,6 @@ class charging_recommendation(object):
 
         return pred.loc[pred['charging'] > 0, 'charging']
 
-
     def recommend(self):
         """
         Method to recommend charging times (Scheduler Module)
@@ -208,12 +209,12 @@ class charging_recommendation(object):
         initial_charge = self.config_dict['Charge_level'] * Wh_to_J
         battery_capacity = self.config_dict['EV_info']['Capacity'] * Wh_to_J
         # lower limit can also include the buffer the manufacturers set *if the charge level obtained from EV has not considered that yet
-        lower_limit = battery_capacity * (self.config_dict['Lower_buffer'] + self.config_dict['Emergency_reserves']) / 100  
+        lower_limit = battery_capacity * (
+                    self.config_dict['Lower_buffer'] + self.config_dict['Emergency_reserves']) / 100
         # does not consider the manufacturer upper buffer yet
-        upper_limit = battery_capacity * (self.config_dict['Upper_buffer'] / 100)  
+        upper_limit = battery_capacity * (self.config_dict['Upper_buffer'] / 100)
         available_charge = initial_charge - lower_limit
         expected_charge = initial_charge
-
 
         # Copy the TOU_data df and create two new columns to be filled
         temp_pred = self.TOU_data.copy()
@@ -221,14 +222,15 @@ class charging_recommendation(object):
         temp_pred['journey'] = 0
 
         # UNCOMMENT line below if (assumption: EV available to charge BEFORE first journey and AFTER last journey of the day)
-        pred = self.charging_slot_availability(pred = temp_pred)
-        
+        pred = self.charging_slot_availability(pred=temp_pred)
+
         # iterate through all pairs of journey start and end points
         for start, end in zip(self.journey_start, self.journey_end):
 
             # calculate total energy consumption for the journey
             sum_of_P_total = sum(self.predicted_EV_data.loc[start:end]['P_total'])  # given in Joules
-            journey_energy_consumption = sum_of_P_total *  (self.config_dict['Charger_efficiency']/100) # given in Joules, this value is the value to be deducted from the battery 
+            journey_energy_consumption = sum_of_P_total * (self.config_dict[
+                                                               'Charger_efficiency'] / 100)  # given in Joules, this value is the value to be deducted from the battery
             # print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
@@ -247,7 +249,9 @@ class charging_recommendation(object):
             # print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
             # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
-            charge_time = journey_energy_consumption / ((self.config_dict['Charger_efficiency']/100) * self.config_dict['Charger_power'] * 60)  # gives charging time in minutes
+            charge_time = journey_energy_consumption / (
+                        (self.config_dict['Charger_efficiency'] / 100) * self.config_dict[
+                    'Charger_power'] * 60)  # gives charging time in minutes
 
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
@@ -263,7 +267,8 @@ class charging_recommendation(object):
 
         # add TOU and SOC (charge level) consideration here (Boon)
         # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
-        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (self.config_dict['Charger_efficiency']/100) # in J for each 30 min timeslot
+        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (
+                    self.config_dict['Charger_efficiency'] / 100)  # in J for each 30 min timeslot
         # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
         while expected_charge < upper_limit:
             # ignore any full slots and sort TOU slots by price

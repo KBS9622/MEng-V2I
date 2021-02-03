@@ -4,6 +4,7 @@ from TOU_analysis_and_prediction import TOU
 from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
 
+
 class Simulation:
     def __init__(self, drive_cycle_file, drive_cycle_subdir, config_path, tou_file, tou_subdir, train_tou):
         self.min_tou_threshold = 0
@@ -29,7 +30,7 @@ class Simulation:
         """
         # Add 1 day to start_next_day index
         self.start_next_day += pd.DateOffset(1)
-        #call method run_recommendation_algorithm()
+        # call method run_recommendation_algorithm()
         recommended_slots = self.run_recommendation_algorithm()
         # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
@@ -37,7 +38,8 @@ class Simulation:
         # calls method calculate_cost_and_energy()
         df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
         # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
-        print(f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
+        print(
+            f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
         print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
         self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
         self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
@@ -54,9 +56,10 @@ class Simulation:
         # concatenates allocated charging time and TOU prices into a new df variable
         df_price_and_time = pd.concat([time_slots_charging, df_price_per_kwh], axis=1)
         # uses charger power to determine energy bought per slot and then calculate cost of buying that energy per slot
-        rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000 #in kW
+        rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000  # in kW
         df_price_and_time["energy_per_time_slot (kWh)"] = (df_price_and_time['charging'] / 60) * rated_charging_power
-        df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * df_price_and_time['TOU']
+        df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * \
+                                                      df_price_and_time['TOU']
 
         print(df_price_and_time)
         # total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
@@ -64,43 +67,56 @@ class Simulation:
 
     def trigger_discharge(self):
         """
-        Reduce the charge level of battery by daily power consumption amount
+        Reduce the charge level of battery by daily power consumption amount\
+        Will not be need if SOC data is received from OBD, if not available will run at the end of the day or as data is
+        streamed in from OBD
         :return:
         """
-        # calculates and print the total energy needed by EV to move as described by drive cycle, accounting for charging AND discharging efficiencies
+        # calculates and print the total energy needed by EV to move as described by drive cycle, accounting for
+        # charging AND discharging efficiencies
         print("Total Energy Consumed for day: ", self.start_next_day)
-        #BOON: right now it uses data in recommendation obj, which is predicted and not actual, therefore should use data from ev_obj
-        print(self.recommendation_obj.EV_data)
-        total_energy = self.recommendation_obj.EV_data['P_total'].sum()
+        # BOON: right now it uses data in recommendation obj, which is predicted and not actual, therefore should use
+        # data from ev_obj
+        start_time = self.start_next_day
+        end_time = self.start_next_day + pd.offsets.Hour(24) - pd.offsets.Second(1)
+        yesterdays_ev_data = self.get_ev_data(start_time=start_time, end_time=end_time)
+        print(yesterdays_ev_data)
+
+        total_energy = yesterdays_ev_data['P_total'].sum()
         print(total_energy)
-        # converts the sum from above to Wh and removes battery charging efficiency to SHOW how many Wh to deduct from battery (as P_total accounts for both battery efficiencies)
-        Wh_to_J = 3600
-        power = (total_energy / Wh_to_J) * (self.ev_obj.charging_battery_efficiency / 100)
-        print("Subtracting ", (power), "Wh from battery")
+        # converts the sum from above to Wh and removes battery charging efficiency to SHOW how many Wh to deduct
+        # from battery (as P_total accounts for both battery efficiencies)
+        wh_to_j = 3600
+        power = (total_energy / wh_to_j) * (self.ev_obj.charging_battery_efficiency / 100)
+        print("Subtracting ", power, "Wh from battery")
         # calls method discharge() from ev_obj (an object of class EV)
         # Note: the method below uses 'total_energy' instead of the variable 'power' that was calculated above
         self.ev_obj.discharge(total_energy)
 
     def create_recommendation_obj(self):
         """
-        creates a recommendation object which needs to load in the 'previous day' drive cycle, 'predicted' drive cycle and tou for those period
-        * this method should only be called once, to create the initial object
+        creates a recommendation object which needs to load in the 'previous day' drive cycle, 'predicted' drive
+        cycle and tou for those period * this method should only be called once, to create the initial object
         :return: object of class 'charging_recommendation'
         """
         # gets ev data for previous day (to determine when EV is home, for charging recommendation)
         # BOON: this will be where ACTUAL drive cycle will be loaded since it is historic data
         previous_ev_data = self.get_ev_data(start_time=self.beginning_of_time,
-                                            end_time=self.beginning_of_time + pd.offsets.Hour(24) - pd.offsets.Second(1))
+                                            end_time=self.beginning_of_time + pd.offsets.Hour(24) - pd.offsets.Second(
+                                                1))
         # get tou data ranging from before EV reaches home until the end of the predicted drive cycle
         # BOON: this may be where we need to modify to integrate TOU forecast module
         predicted_tou_data = self.get_tou_data(start_time=self.beginning_of_time,
-                                               end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Minute(30))
-        # gets the next day drive cycle (which should be predicted by the drive cycle forecast module)
-        # BOON: this will be where we need to call the drive cycle prediction function (new method called 'predict_ev_data'?)
+                                               end_time=self.beginning_of_time + pd.offsets.Hour(
+                                                   48) - pd.offsets.Minute(30))
+        # gets the next day drive cycle (which should be predicted by the drive cycle forecast module) BOON: this
+        # will be where we need to call the drive cycle prediction function (new method called 'predict_ev_data'?)
         ev_consumption_data = self.get_ev_data(start_time=self.beginning_of_time + pd.offsets.Hour(24),
-                                               end_time=self.beginning_of_time + pd.offsets.Hour(48) - pd.offsets.Second(1))
+                                               end_time=self.beginning_of_time + pd.offsets.Hour(
+                                                   48) - pd.offsets.Second(1))
         # calls constructor for class 'charging_recommendation'
-        recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data, self.config_path)
+        recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data,
+                                                     self.config_path)
         return recommendation_obj
 
     def run_recommendation_algorithm(self):
@@ -116,7 +132,9 @@ class Simulation:
         if self.recommendation_obj:
             # calls method 'set_EV_data' to update 'predicted' drive cycle
             # BOON: this line will need to call the predict_ev_data as first input!!!
-            self.recommendation_obj.set_EV_data(self.get_ev_data(start_time=start_time,end_time=end_time), self.get_ev_data(start_time=previous_start_time,end_time=previous_end_time))
+            self.recommendation_obj.set_EV_data(self.get_ev_data(start_time=start_time, end_time=end_time),
+                                                self.get_ev_data(start_time=previous_start_time,
+                                                                 end_time=previous_end_time))
             # determine the end range of TOU feed in
             tou_end_time = self.recommendation_obj.charging_time_start.replace(hour=23, minute=30, second=0) + \
                            pd.DateOffset(1)
@@ -129,7 +147,7 @@ class Simulation:
             self.recommendation_obj = self.create_recommendation_obj()
         # gets user configuration for system by calling method 'pull_user_config()
         self.recommendation_obj.pull_user_config()
-        print('Manual Override: ',self.recommendation_obj.config_dict['Manual_override'])
+        print('Manual Override: ', self.recommendation_obj.config_dict['Manual_override'])
         # run uncontrolled charging if user chooses to manual override, otherwise run IntelliCharga algorithm
         if self.recommendation_obj.config_dict['Manual_override']:
             return self.recommendation_obj.uncontrolled()
@@ -146,7 +164,7 @@ class Simulation:
         # eg: when actually DISCHARGING EV, it should be based on actual data and not predicted, as predicted is only for CHARGING
         pass
         # return self.ev_obj.data.loc[start_time:end_time, :]
-    
+
     def get_ev_data(self, start_time, end_time):
         """
         gets the slots of ev drive cycle data indicated by the start_time and end_time
@@ -185,7 +203,7 @@ class Simulation:
         # BOON: this will probably be where we use Atom's prediction method/function
         # predicted_tou = self.tou_obj.predict_and_compare(self.start_time, self.end_time)
         # not using predicted, using actual values ... complete line 95 to do so
-        self.format_tou_data() # adds column names for when using actual prices, comment if using predicted prices
+        self.format_tou_data()  # adds column names for when using actual prices, comment if using predicted prices
         # gets the tou prices from start_time to end_time
         predicted_tou = self.tou_obj.time_idx_TOU_price.loc[start_time:end_time, :]
         return predicted_tou
