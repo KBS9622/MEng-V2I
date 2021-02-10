@@ -98,7 +98,7 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     # Train set
     train = data.copy()[data.index < valid_start][[feature]]
     train_shifted = train.copy()
-    train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1)
+    train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1) #BOON: is this where we can determine the difference between label and end of feature window?
 
     for t in range(1, T + 1):
         train_shifted['{}_t-'.format(feature) + str(T - t)] = train_shifted[feature].shift(T - t)
@@ -191,7 +191,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 def test(path, id, network, scaler, predictions, y_test, test_shifted, transfer_learning=False):
     """Plot Test set of Drive Cycle of Specific Device ID"""
 
-    HORIZON = 1
+    HORIZON = 1 #BOON: this seems like where we can vary the end of feature window and label
     test = pd.DataFrame(predictions, columns=['t+' + str(t) for t in range(1, HORIZON + 1)])
     test['timeStamp'] = test_shifted.index
 
