@@ -1,35 +1,60 @@
 import os
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
-from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
-import torch
+from matplotlib import pyplot as plt
+from datetime import datetime, timedelta
 
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_absolute_error as MAE
-from sklearn.metrics import mean_squared_error as MSE
+import torch
+from torch.utils.data import TensorDataset, DataLoader
 
 from config import *
-
 
 # Device Configuration #
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
-def load_data(data):
+def load_data(which_data, resample):
     """Data Loader"""
-    data_dir = os.path.join(config.combined_path, data)
+    data_dir = os.path.join(config.combined_path, which_data)
 
     data = pd.read_csv(data_dir,
                        # infer_datetime_format=True,
                        parse_dates=['timeStamp']
                        )
 
-    data.index = data['timeStamp']
-    data = data.drop('timeStamp', axis=1)
+    data['timeStamp'] = pd.to_datetime(data['timeStamp'])
+
+    cols_to_drop = ['Unnamed: 0',
+                    'tripID',
+                    'deviceID',
+                    'accData',
+                    'battery',
+                    'cTemp',
+                    'dtc',
+                    'eLoad',
+                    'iat',
+                    'imap',
+                    'kpl',
+                    'maf',
+                    'rpm',
+                    'tAdv',
+                    'tPos',
+                    'fuel',
+                    'gps_speed'
+                    ]
+
+    data.drop(cols_to_drop, axis=1, inplace=True)
+    data = data.set_index('timeStamp')
+
+    if resample:
+        data = data.resample("1S").first().ffill()
+        # data.to_csv(os.path.join(config.combined_path, 'resampled_' + which_data))
+        data.loc['2017-12-23 12:00:00':'2017-12-23 15:00:00', 'speed'] = 0
+
+    print(data['2017-12-23 12:00:00':'2017-12-23 15:00:00'].sum())
 
     return data
 
@@ -65,21 +90,6 @@ def plot_split(path, data, id, valid_start, test_start, feature):
     plt.grid()
     plt.title('Drive Cycle of Device ID {} Splitted'.format(id))
     plt.savefig(os.path.join(path, 'Drive_Cycle_Device_ID_{}_Splitted.png'.format(id)))
-
-
-def scaling_window(data, seq_length):
-    """Scaling Window Function : Wrapping Data Sequentially"""
-    x, y = list(), list()
-
-    for i in range(len(data) - seq_length - 1):
-        data_x = data[i:(i + seq_length)]
-        data_y = data[i + seq_length]
-        x.append(data_x)
-        y.append(data_y)
-
-    x, y = np.array(x), np.array(y)
-
-    return x, y
 
 
 def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio=False):
@@ -142,14 +152,14 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     y_test = test_shifted['{}_t+1'.format(feature)].to_numpy()
 
     # Convert to Torch
-    X_train = torch.from_numpy(X_train).to(device, dtype=torch.float32)
-    y_train = torch.from_numpy(y_train).to(device, dtype=torch.float32)
+    X_train = torch.from_numpy(X_train)
+    y_train = torch.from_numpy(y_train)
 
-    X_valid = torch.from_numpy(X_valid).to(device, dtype=torch.float32)
-    y_valid = torch.from_numpy(y_valid).to(device, dtype=torch.float32)
+    X_valid = torch.from_numpy(X_valid)
+    y_valid = torch.from_numpy(y_valid)
 
-    X_test = torch.from_numpy(X_test).to(device, dtype=torch.float32)
-    y_test = torch.from_numpy(y_test).to(device, dtype=torch.float32)
+    X_test = torch.from_numpy(X_test)
+    y_test = torch.from_numpy(y_test)
 
     if print_ratio:
         total = X_train.shape[0] + X_valid.shape[0] + X_test.shape[0]
@@ -162,8 +172,25 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     return X_train, y_train, X_valid, y_valid, X_test, y_test, test_shifted
 
 
-def plot_test_set(path, id, network, scaler, predictions, y_test, test_shifted, transfer_learning=False):
+def get_data_loader(X_train, y_train, X_valid, y_valid, batch_size, val_batch_size):
+    """Get Data Loader"""
+
+    # Wrap for Data Loader #
+    train_set = TensorDataset(X_train, y_train)
+    val_set = TensorDataset(X_valid, y_valid)
+
+    # Prepare Data Loader #
+    train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_set, batch_size=val_batch_size, shuffle=False)
+
+    return train_loader, val_loader
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+
+
+def test(path, id, network, scaler, predictions, y_test, test_shifted, transfer_learning=False):
     """Plot Test set of Drive Cycle of Specific Device ID"""
+
     HORIZON = 1
     test = pd.DataFrame(predictions, columns=['t+' + str(t) for t in range(1, HORIZON + 1)])
     test['timeStamp'] = test_shifted.index
@@ -172,9 +199,26 @@ def plot_test_set(path, id, network, scaler, predictions, y_test, test_shifted, 
     test['Actual'] = np.transpose(y_test.cpu())
 
     test[['Prediction', 'Actual']] = scaler.inverse_transform(test[['Prediction', 'Actual']])
-    test[test.timeStamp <= '2017-12-31'].plot(x='timeStamp', y=['Prediction', 'Actual'], style=['r', 'b'], figsize=(16, 8))
+    test[test.timeStamp <= '2017-12-23'].plot(x='timeStamp', y=['Prediction', 'Actual'], style=['r', 'b'], figsize=(16, 8))
 
-    # test[test.timeStamp <= '2017-12-23 06:55:00'].plot(x='timeStamp', y=['Prediction', 'Actual'], style=['r', 'b'], figsize=(16, 8))
+    pred_test, label = test['Prediction'], test['Actual']
+
+    # Calculate Loss #
+    test_mae = mean_absolute_error(label, pred_test)
+    test_mse = mean_squared_error(label, pred_test, squared=True)
+    test_rmse = mean_squared_error(label, pred_test, squared=False)
+    test_mpe = mean_percentage_error(label, pred_test)
+    test_mape = mean_absolute_percentage_error(label, pred_test)
+    test_r2 = r2_score(label, pred_test)
+
+    # Print Statistics #
+    print("Test {}".format(config.network.__class__.__name__))
+    print("Test  MAE : {:.4f}".format(test_mae))
+    print("Test  MSE : {:.4f}".format(test_mse))
+    print("Test RMSE : {:.4f}".format(test_rmse))
+    print("Test  MPE : {:.4f}".format(test_mpe))
+    print("Test MAPE : {:.4f}".format(test_mape))
+    print("Test  R^2 : {:.4f}".format(test_r2))
 
     plt.xlabel('DateTime', fontsize=12)
     plt.xticks(rotation=45)
@@ -189,25 +233,7 @@ def plot_test_set(path, id, network, scaler, predictions, y_test, test_shifted, 
     else:
         plt.title('Drive Cycle of Device ID {} Prediction using {}'.format(id, network), fontsize=18)
         plt.savefig(os.path.join(path, 'Drive_Cycle_Device_ID_{}_Test_{}.png'.format(id, network)))
-
-    return test['Prediction'], test['Actual']
-
-
-def get_time_series_data(x, y):
-    """Time Series Data Loader"""
-    train_size = int(len(y) * config.train_split)
-    val_size = int(len(y) * config.test_split)
-
-    train_X = torch.from_numpy(x[0:train_size]).float().to(device)
-    train_Y = torch.from_numpy(y[0:train_size]).float().to(device)
-
-    val_X = torch.from_numpy(x[train_size:train_size + val_size]).float().to(device)
-    val_Y = torch.from_numpy(y[train_size:train_size + val_size]).float().to(device)
-
-    test_X = torch.from_numpy(x[train_size + val_size:len(x)]).float().to(device)
-    test_Y = torch.from_numpy(y[train_size + val_size:len(y)]).float().to(device)
-
-    return train_X, train_Y, val_X, val_Y, test_X, test_Y
+        plt.show()
 
 
 def percentage_error(actual, predicted):
@@ -221,30 +247,28 @@ def percentage_error(actual, predicted):
     return res
 
 
-def RMSE(y_true, y_pred):
-    """Root Mean Squared Error"""
-    return np.sqrt(MSE(y_true, y_pred))
-
-
-def MAPE(y_true, y_pred):
-    """Mean Absolute Percentage Error"""
-    return np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred)))) * 100
-
-
-def MPE(y_true, y_pred):
+def mean_percentage_error(y_true, y_pred):
     """Mean Percentage Error"""
-    return np.mean(percentage_error(np.asarray(y_true), np.asarray(y_pred))) * 100
+    mpe = np.mean(percentage_error(np.asarray(y_true), np.asarray(y_pred))) * 100
+    return mpe
 
 
-def get_lr_scheduler(optimizer):
+def mean_absolute_percentage_error(y_true, y_pred):
+    """Mean Absolute Percentage Error"""
+    mape = np.mean(np.abs(percentage_error(np.asarray(y_true), np.asarray(y_pred)))) * 100
+    return mape
+
+
+def get_lr_scheduler(lr_scheduler, optimizer, config):
     """Learning Rate Scheduler"""
-    if config.lr_scheduler == 'step':
+    if lr_scheduler == 'step':
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=config.lr_decay_every, gamma=config.lr_decay_rate)
-    elif config.lr_scheduler == 'plateau':
+    elif lr_scheduler == 'plateau':
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.2, threshold=0.01, patience=5)
-    elif config.lr_scheduler == 'cosine':
+    elif lr_scheduler == 'cosine':
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=config.num_epochs, eta_min=0)
     else:
         raise NotImplementedError
+
     return scheduler
 
