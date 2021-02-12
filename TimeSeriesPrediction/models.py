@@ -25,15 +25,16 @@ class DNN(nn.Module):
 
 class CNN(nn.Module):
     """Convolutional Neural Networks"""
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, hidden_size, out_channels):
         super(CNN, self).__init__()
 
         self.main = nn.Sequential(
             nn.Conv1d(in_channels=in_channels, out_channels=out_channels, kernel_size=1),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(out_channels, 10),
-            nn.Linear(10, 1)
+            nn.Linear(out_channels, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, out_channels)
         )
 
     def forward(self, x):
@@ -97,7 +98,7 @@ class LSTM(nn.Module):
 
 
 class GRU(nn.Module):
-    """Gat e Recurrent Unit"""
+    """Gate Recurrent Unit"""
     def __init__(self, input_size, hidden_size, num_layers, output_size):
         super(GRU, self).__init__()
 

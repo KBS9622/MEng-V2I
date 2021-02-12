@@ -3,14 +3,16 @@ import argparse
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--seed', type=int, default=1234, help='fix seed for reproducibility')
+parser.add_argument('--batch_size', type=int, default=256, help='mini-batch size')
+parser.add_argument('--num_epochs', type=int, default=10, help='total epoch')
+parser.add_argument('--window', type=int, default=180, help='the number of window, unit : second')
+
 parser.add_argument('--plot', type=bool, default=False, help='plot graph or not')
-parser.add_argument('--batch_size', type=int, default=2048, help='mini-batch size')
-parser.add_argument('--val_batch_size', type=int, default=128, help='mini-batch size')
+parser.add_argument('--preprocess', type=bool, default=True, help='remove outliers')
+parser.add_argument('--resample', type=bool, default=True, help='resample')
 
 parser.add_argument('--feature', type=str, default='speed', help='extract which feature for prediction')
-parser.add_argument('--network', type=str, default='lstm', choices=['dnn', 'cnn', 'rnn', 'lstm', 'gru', 'recursive', 'attention'])
-
-parser.add_argument('--resample', type=bool, default=True, help='resample missing values or not')
+parser.add_argument('--network', type=str, default='lstm', choices=['dnn', 'cnn', 'rnn', 'lstm', 'gru', 'recursive', 'attentional'])
 parser.add_argument('--transfer_learning', type=bool, default=False, help='transfer learning')
 
 parser.add_argument('--which_data', type=str, default='12_sep_oct_nov_nov_dec.csv', help='which data to use')
@@ -22,10 +24,6 @@ parser.add_argument('--plots_path', type=str,  default='./results/plots/', help=
 parser.add_argument('--valid_start', type=str, default='2017-12-12 00:00:00', help='validation start date')
 parser.add_argument('--test_start', type=str, default='2017-12-23 00:00:00', help='test start date')
 
-parser.add_argument('--num_epochs', type=int, default=10, help='total epoch')
-parser.add_argument('--print_every', type=int, default=1000, help='print statistics for every n iteration')
-parser.add_argument('--window', type=int, default=20, help='the number of window')
-
 parser.add_argument('--lr', type=float, default=1e-3, help='learning rate')
 parser.add_argument('--lr_decay_rate', type=float, default=0.5, help='decay learning rate')
 parser.add_argument('--lr_decay_every', type=int, default=100, help='decay learning rate for every n epoch')
@@ -36,8 +34,11 @@ parser.add_argument('--hidden_size', type=int, default=10, help='hidden_size')
 parser.add_argument('--num_layers', type=int, default=1, help='num_layers')
 parser.add_argument('--output_size', type=int, default=1, help='output_size')
 parser.add_argument('--bidirectional', type=bool, default=False, help='bidirectional or not')
+parser.add_argument('--key', type=int, default=8, help='key')
+parser.add_argument('--query', type=int, default=8, help='query')
+parser.add_argument('--value', type=int, default=8, help='value')
 
-parser.add_argument('--mode', type=str, default='test', choices=['train', 'test'])
+parser.add_argument('--mode', type=str, default='train', choices=['train', 'test'])
 
 parser.add_argument('-f')
 config = parser.parse_args()
