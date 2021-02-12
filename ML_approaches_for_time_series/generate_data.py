@@ -8,6 +8,7 @@ import time
 
 ### Generate the data
 N = 600
+np.random.seed(42)
 
 #generating uneven timestamps
 t = np.arange(0, N, 1).reshape(-1,1)
@@ -68,13 +69,13 @@ testset = dataset.iloc[402:,:]
 # print(testset)
 
 # create windows
-w = 5
+w = 2
 train_constructor = WindowSlider(window_size=w)
-train_windows = train_constructor.collect_windows(trainset.iloc[:,1:], 
+train_windows = train_constructor.collect_windows(trainset.iloc[:,1:], window_size=w,
                                                   previous_y=False)
 
 test_constructor = WindowSlider(window_size=w)
-test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
+test_windows = test_constructor.collect_windows(testset.iloc[:,1:],window_size=w,
                                                 previous_y=False)
 
 

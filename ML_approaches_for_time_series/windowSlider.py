@@ -16,7 +16,7 @@ class WindowSlider(object):
         '''
         self.w = window_size
         self.o = 0
-        self.r = 2       
+        self.r = 1       
         self.l = 0
         self.p = 0
         self.names = []
