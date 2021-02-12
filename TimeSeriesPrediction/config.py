@@ -11,8 +11,7 @@ parser.add_argument('--plot', type=bool, default=False, help='plot graph or not'
 parser.add_argument('--preprocess', type=bool, default=True, help='remove outliers')
 parser.add_argument('--resample', type=bool, default=True, help='resample')
 
-parser.add_argument('--feature', type=list, default=[''], help='extract which feature for prediction')
-parser.add_argument('--label', type=str, default='speed', help='label that we want to predict')
+parser.add_argument('--feature', type=str, default='speed', help='extract which feature for prediction')
 parser.add_argument('--network', type=str, default='lstm', choices=['dnn', 'cnn', 'rnn', 'lstm', 'gru', 'recursive', 'attentional'])
 parser.add_argument('--transfer_learning', type=bool, default=False, help='transfer learning')
 
