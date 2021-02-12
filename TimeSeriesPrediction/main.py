@@ -51,7 +51,7 @@ def main():
 
     # Split the Dataset #
     train_X, train_Y, val_X, val_Y, test_X, test_Y, test_shifted = \
-        get_time_series_data_(data, config.valid_start, config.test_start, config.feature, config.window)
+        get_time_series_data_(data, config.valid_start, config.test_start, config.feature, config.label, config.window)
 
     print(train_X.shape)
     print(train_Y.shape)

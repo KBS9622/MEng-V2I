@@ -103,44 +103,52 @@ def plot_split(path, data, id, valid_start, test_start, feature):
     plt.savefig(os.path.join(path, 'Drive_Cycle_Device_ID_{}_Splitted.png'.format(id)))
 
 
-def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio=False):
+def get_time_series_data_(data, valid_start, test_start, feature, label, T, print_ratio=False):
     """Time Series Data Loader"""
 
-    # Train set
-    train = data.copy()[data.index < valid_start][[feature]]
-    train_shifted = train.copy()
-    train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1)
-
-    for t in range(1, T + 1):
-        train_shifted['{}_t-'.format(feature) + str(T - t)] = train_shifted[feature].shift(T - t)
-
-    train_shifted = train_shifted.rename(columns={feature: '{}_original'.format(feature)})
-    train_shifted = train_shifted.dropna(how='any')
-
-    X_train = train_shifted[['{}_t-'.format(feature)+str(T-t) for t in range(1, T+1)]]
-    y_train = train_shifted[['{}_t+1'.format(feature)]]
-
+    # new CODEEEEEEEWEEEE
+    X_train = data.copy()[data.index < valid_start][feature]
+    y_train = data.copy()[data.index < valid_start][[label]]
     X_train = X_train.to_numpy()
     y_train = y_train.to_numpy()
-
     X_train = X_train[..., np.newaxis]
+
+    # Train set
+    # train = data.copy()[data.index < valid_start][[feature]]
+    # train_shifted = train.copy()
+    # train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1)
+
+    # for t in range(1, T + 1):
+    #     train_shifted['{}_t-'.format(feature) + str(T - t)] = train_shifted[feature].shift(T - t)
+
+    # train_shifted = train_shifted.rename(columns={feature: '{}_original'.format(feature)})
+    # train_shifted = train_shifted.dropna(how='any')
+
+    # X_train = train_shifted[['{}_t-'.format(feature)+str(T-t) for t in range(1, T+1)]]
+    # y_train = train_shifted[['{}_t+1'.format(feature)]]
+
+    # X_train = X_train.to_numpy()
+    # y_train = y_train.to_numpy()
+
+    # X_train = X_train[..., np.newaxis]
 
     # Valid set
     look_back_dt = datetime.strptime(valid_start, '%Y-%m-%d %H:%M:%S') - timedelta(seconds=T - 1)
 
     data.index = pd.to_datetime(data.index)
 
-    valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][[feature]]
+    X_valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][feature]
+    y_valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][[label]]
 
-    valid_shifted = valid.copy()
-    valid_shifted['{}+1'.format(feature)] = valid_shifted[feature].shift(-1)
-    for t in range(1, T + 1):
-        valid_shifted['{}_t-'.format(feature) + str(T - t)] = valid_shifted[feature].shift(T - t)
+    # valid_shifted = valid.copy()
+    # valid_shifted['{}+1'.format(feature)] = valid_shifted[feature].shift(-1)
+    # for t in range(1, T + 1):
+    #     valid_shifted['{}_t-'.format(feature) + str(T - t)] = valid_shifted[feature].shift(T - t)
 
-    valid_shifted = valid_shifted.dropna(how='any')
+    # valid_shifted = valid_shifted.dropna(how='any')
 
-    X_valid = valid_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]]
-    y_valid = valid_shifted['{}+1'.format(feature)]
+    # X_valid = valid_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]]
+    # y_valid = valid_shifted['{}+1'.format(feature)]
 
     X_valid = X_valid.to_numpy()
     y_valid = y_valid.to_numpy()
@@ -148,9 +156,10 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     X_valid = X_valid[..., np.newaxis]
 
     # Test set
-    test = data.copy()[data.index >= test_start][[feature]]
+    X_test = data.copy()[data.index >= test_start][feature].to_numpy()
+    y_test = data.copy()[data.index >= test_start][[label]].to_numpy()
 
-    test_shifted = test.copy()
+    test_shifted = data.copy()[data.index >= test_start][[label]].copy()
     test_shifted['{}_t+1'.format(feature)] = test_shifted[feature].shift(-1)
 
     for t in range(1, T + 1):
@@ -158,8 +167,8 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
 
     test_shifted = test_shifted.dropna(how='any')
 
-    X_test = test_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]].to_numpy()
-    y_test = test_shifted['{}_t+1'.format(feature)].to_numpy()
+    # X_test = test_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]].to_numpy()
+    # y_test = test_shifted['{}_t+1'.format(feature)].to_numpy()
 
     X_test = X_test[..., np.newaxis]
 
@@ -170,6 +179,13 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
         X_test_ratio = X_test.shape[0] / total
 
         print(X_train_ratio, X_valid_ratio, X_test_ratio)
+
+    print(X_train)
+    print(y_train)
+    print(X_valid)
+    print(y_valid)
+    print(X_test)
+    print(y_test)
 
     return X_train, y_train, X_valid, y_valid, X_test, y_test, test_shifted
 
