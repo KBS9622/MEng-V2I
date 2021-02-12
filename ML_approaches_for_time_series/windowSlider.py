@@ -16,7 +16,7 @@ class WindowSlider(object):
         '''
         self.w = window_size
         self.o = 0
-        self.r = 1       
+        self.r = 2       
         self.l = 0
         self.p = 0
         self.names = []
@@ -82,7 +82,9 @@ class WindowSlider(object):
                 slices = np.concatenate((slices, line)) 
  
             # Incorporate the timestamps where we want to predict
-            line = np.array([self.re_init(X.values[i:i+self.w+self.r, 0])[-1]])
+            # j = self.r - 1
+            hi = self.re_init(X.values[i:i+self.w+self.r, 0])
+            line = np.array([hi[-self.r:]]).reshape(self.r,)
             y = np.array(X.values[self.w + i + self.r - 1, -1]).reshape(1,)
             slices = np.concatenate((slices, line, y))
             

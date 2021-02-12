@@ -29,9 +29,9 @@ y = np.array([((np.log(np.abs(2 + x1[t])) - x2[t-1]**2) + 0.02*x3[t-3]*np.exp(x1
 y = np.round(y+n, 2)
 
 #Plotting data
-# plt.figure()
-# plt.plot(t,y)
-# plt.show()
+plt.figure()
+plt.plot(t,y)
+plt.show()
 
 # concatenating dataset
 dataset = pd.DataFrame(np.concatenate((t, x1, x2, x3, y), axis=1), 
@@ -44,14 +44,14 @@ deltaT = np.concatenate((np.array([0]), deltaT))
 # adding deltaT into the dataset as a feature
 dataset.insert(1, '∆t', deltaT)
 dataset.head(3)
-print(dataset.head(3))
+print(dataset.head(10))
 
 # print(dataset.iloc[:,5])
 
 # split data
 # train_set, valid_set, test_set = load_dataset(data_path, dataset, comments=comments)
 
-X_train, X_test, y_train, y_test = train_test_split(dataset.iloc[:,:5], dataset.iloc[:,5], test_size=0.33, shuffle=False)
+# X_train, X_test, y_train, y_test = train_test_split(dataset.iloc[:,:5], dataset.iloc[:,5], test_size=0.33, shuffle=False)
 
 # print(X_train.shape)
 # print(X_test.shape)
@@ -69,11 +69,11 @@ testset = dataset.iloc[402:,:]
 
 # create windows
 w = 5
-train_constructor = WindowSlider()
+train_constructor = WindowSlider(window_size=w)
 train_windows = train_constructor.collect_windows(trainset.iloc[:,1:], 
                                                   previous_y=False)
 
-test_constructor = WindowSlider()
+test_constructor = WindowSlider(window_size=w)
 test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
                                                 previous_y=False)
 
@@ -142,11 +142,12 @@ lr_rmse = np.sqrt(np.sum(np.power(lr_residuals,2)) / len(lr_residuals))
 print('RMSE = %.2f' % lr_rmse)
 print('Time to train = %.2f seconds' % (tF - t0))
 
+start_index = train_constructor.w + train_constructor.r - 1
 f, (ax1, ax2) = plt.subplots(2, 1, figsize=(20,6))
 ax1.set_title('Test set')
-ax1.plot(testset.iloc[5:,0], lr_y, 'b-')
-ax1.plot(testset.iloc[5:,0], lr_y_pred, 'r-')
+ax1.plot(testset.iloc[start_index:,0], lr_y, 'b-')
+ax1.plot(testset.iloc[start_index:,0], lr_y_pred, 'r-')
 ax2.set_title('Train set')
-ax2.plot(trainset.iloc[5:,0], trainset.iloc[5:,-1], 'b-')
-ax2.plot(trainset.iloc[5:,0], lr_y_fit, 'r-')
+ax2.plot(trainset.iloc[start_index:,0], trainset.iloc[start_index:,-1], 'b-')
+ax2.plot(trainset.iloc[start_index:,0], lr_y_fit, 'r-')
 plt.show()
