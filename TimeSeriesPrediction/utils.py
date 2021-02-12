@@ -6,17 +6,22 @@ warnings.filterwarnings('ignore')
 
 from matplotlib import pyplot as plt
 from datetime import datetime, timedelta
-from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 import torch
 from torch.utils.data import TensorDataset, DataLoader
 
+from config import *
 
-def load_data(path, which_data, preprocess, resample):
-    """Load, Preprocess and Resample the CSV file"""
-    data_dir = os.path.join(path, which_data)
+# Device Configuration #
+device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+def load_data(which_data, resample):
+    """Data Loader"""
+    data_dir = os.path.join(config.combined_path, which_data)
 
     data = pd.read_csv(data_dir,
+                       # infer_datetime_format=True,
                        parse_dates=['timeStamp']
                        )
 
@@ -41,31 +46,15 @@ def load_data(path, which_data, preprocess, resample):
                     'gps_speed'
                     ]
 
-    if preprocess:
-        outlier_index = data.loc[data['speed'] > 200, :].index
-
-        for x in outlier_index:
-            data.loc[x, 'speed'] = data.loc[x - 1, 'speed']
-
     data.drop(cols_to_drop, axis=1, inplace=True)
     data = data.set_index('timeStamp')
 
     if resample:
         data = data.resample("1S").first().ffill()
+        # data.to_csv(os.path.join(config.combined_path, 'resampled_' + which_data))
+        data.loc['2017-12-23 12:00:00':'2017-12-23 15:00:00', 'speed'] = 0
 
-    data['date'] = data.index.copy()
-
-    data['year'] = data['date'].dt.year
-    data['month'] = data['date'].dt.month
-    data['day'] = data['date'].dt.day
-    data['dayofweek'] = data['date'].dt.dayofweek
-    data['hour'] = data['date'].dt.hour
-    data['minute'] = data['date'].dt.minute
-    data['second'] = data['date'].dt.second
-
-    data.drop(['date'], axis=1, inplace=True)
-
-    print(data)
+    print(data['2017-12-23 12:00:00':'2017-12-23 15:00:00'].sum())
 
     return data
 
@@ -109,7 +98,7 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     # Train set
     train = data.copy()[data.index < valid_start][[feature]]
     train_shifted = train.copy()
-    train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1)
+    train_shifted['{}_t+1'.format(feature)] = train_shifted[feature].shift(-1) #BOON: is this where we can determine the difference between label and end of feature window?
 
     for t in range(1, T + 1):
         train_shifted['{}_t-'.format(feature) + str(T - t)] = train_shifted[feature].shift(T - t)
@@ -140,12 +129,11 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     valid_shifted = valid_shifted.dropna(how='any')
 
     X_valid = valid_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]]
-    y_valid = valid_shifted['{}+1'.format(feature)]
-
     X_valid = X_valid.to_numpy()
-    y_valid = y_valid.to_numpy()
-
     X_valid = X_valid[..., np.newaxis]
+
+    y_valid = valid_shifted['{}+1'.format(feature)]
+    y_valid = y_valid.to_numpy()
 
     # Test set
     test = data.copy()[data.index >= test_start][[feature]]
@@ -159,9 +147,19 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     test_shifted = test_shifted.dropna(how='any')
 
     X_test = test_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]].to_numpy()
+    X_test = X_test[..., np.newaxis]
+
     y_test = test_shifted['{}_t+1'.format(feature)].to_numpy()
 
-    X_test = X_test[..., np.newaxis]
+    # Convert to Torch
+    X_train = torch.from_numpy(X_train)
+    y_train = torch.from_numpy(y_train)
+
+    X_valid = torch.from_numpy(X_valid)
+    y_valid = torch.from_numpy(y_valid)
+
+    X_test = torch.from_numpy(X_test)
+    y_test = torch.from_numpy(y_test)
 
     if print_ratio:
         total = X_train.shape[0] + X_valid.shape[0] + X_test.shape[0]
@@ -174,34 +172,34 @@ def get_time_series_data_(data, valid_start, test_start, feature, T, print_ratio
     return X_train, y_train, X_valid, y_valid, X_test, y_test, test_shifted
 
 
-def get_data_loader(X_train, y_train, X_valid, y_valid, X_test, y_test, batch_size):
+def get_data_loader(X_train, y_train, X_valid, y_valid, batch_size, val_batch_size):
     """Get Data Loader"""
 
     # Wrap for Data Loader #
-    train_set = TensorDataset(torch.from_numpy(X_train), torch.from_numpy(y_train))
-    val_set = TensorDataset(torch.from_numpy(X_valid), torch.from_numpy(y_valid))
-    test_set = TensorDataset(torch.from_numpy(X_test), torch.from_numpy(y_test))
+    train_set = TensorDataset(X_train, y_train)
+    val_set = TensorDataset(X_valid, y_valid)
 
     # Prepare Data Loader #
     train_loader = DataLoader(train_set, batch_size=batch_size, shuffle=False)
-    val_loader = DataLoader(val_set, batch_size=batch_size, shuffle=False)
-    test_loader = DataLoader(test_set, batch_size=batch_size, shuffle=False)
+    val_loader = DataLoader(val_set, batch_size=val_batch_size, shuffle=False)
 
-    return train_loader, val_loader, test_loader
+    return train_loader, val_loader
+
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 
 def test(path, id, network, scaler, predictions, y_test, test_shifted, transfer_learning=False):
     """Plot Test set of Drive Cycle of Specific Device ID"""
 
-    HORIZON = 1
+    HORIZON = 1 #BOON: this seems like where we can vary the end of feature window and label
     test = pd.DataFrame(predictions, columns=['t+' + str(t) for t in range(1, HORIZON + 1)])
     test['timeStamp'] = test_shifted.index
 
     test = pd.melt(test, id_vars='timeStamp', value_name='Prediction', var_name='h')
-    test['Actual'] = np.transpose(y_test)
+    test['Actual'] = np.transpose(y_test.cpu())
 
     test[['Prediction', 'Actual']] = scaler.inverse_transform(test[['Prediction', 'Actual']])
-    test[test.timeStamp <= '2017-12-31'].plot(x='timeStamp', y=['Prediction', 'Actual'], style=['r', 'b'], figsize=(16, 8))
+    test[test.timeStamp <= '2017-12-23'].plot(x='timeStamp', y=['Prediction', 'Actual'], style=['r', 'b'], figsize=(16, 8))
 
     pred_test, label = test['Prediction'], test['Actual']
 
@@ -214,16 +212,16 @@ def test(path, id, network, scaler, predictions, y_test, test_shifted, transfer_
     test_r2 = r2_score(label, pred_test)
 
     # Print Statistics #
-    print("Test {}".format(network))
-    print(" MAE : {:.4f}".format(test_mae))
-    print(" MSE : {:.4f}".format(test_mse))
-    print("RMSE : {:.4f}".format(test_rmse))
-    print(" MPE : {:.4f}".format(test_mpe))
-    print("MAPE : {:.4f}".format(test_mape))
-    print(" R^2 : {:.4f}".format(test_r2))
+    print("Test {}".format(config.network.__class__.__name__))
+    print("Test  MAE : {:.4f}".format(test_mae))
+    print("Test  MSE : {:.4f}".format(test_mse))
+    print("Test RMSE : {:.4f}".format(test_rmse))
+    print("Test  MPE : {:.4f}".format(test_mpe))
+    print("Test MAPE : {:.4f}".format(test_mape))
+    print("Test  R^2 : {:.4f}".format(test_r2))
 
     plt.xlabel('DateTime', fontsize=12)
-    plt.xticks()
+    plt.xticks(rotation=45)
     plt.ylabel('Speed', fontsize=12)
     plt.grid()
     plt.legend(fontsize=16)
@@ -236,8 +234,6 @@ def test(path, id, network, scaler, predictions, y_test, test_shifted, transfer_
         plt.title('Drive Cycle of Device ID {} Prediction using {}'.format(id, network), fontsize=18)
         plt.savefig(os.path.join(path, 'Drive_Cycle_Device_ID_{}_Test_{}.png'.format(id, network)))
         plt.show()
-
-    return test['Prediction'], test['Actual']
 
 
 def percentage_error(actual, predicted):
