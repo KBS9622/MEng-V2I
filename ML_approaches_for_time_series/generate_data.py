@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
+import copy as cp
 import matplotlib.pyplot as plt
 from windowSlider import WindowSlider
 from sklearn.model_selection import train_test_split
+import time
 
 ### Generate the data
 N = 600
@@ -75,6 +77,7 @@ test_constructor = WindowSlider()
 test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
                                                 previous_y=False)
 
+
 # # window slider with previous y included
 # train_constructor_y_inc = WindowSlider()
 # train_windows_y_inc = train_constructor_y_inc.collect_windows(trainset.iloc[:,1:], 
@@ -84,4 +87,66 @@ test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
 # test_windows_y_inc = test_constructor_y_inc.collect_windows(testset.iloc[:,1:],
 #                                                 previous_y=True)
 
-print(train_windows.shape)
+print(train_windows.head(3))
+
+# ________________ Y_pred = current Y ________________ 
+bl_trainset = cp.deepcopy(trainset)
+bl_testset = cp.deepcopy(testset)
+
+bl_y = pd.DataFrame(bl_testset['y'])
+bl_y_pred = bl_y.shift(periods=1)
+
+bl_residuals = bl_y_pred - bl_y
+bl_rmse = np.sqrt(np.sum(np.power(bl_residuals,2)) / len(bl_residuals))
+print('RMSE = %.2f' % bl_rmse)
+print('Time to train = 0 seconds')
+
+# ______________ MULTIPLE LINEAR REGRESSION ______________ #
+from sklearn.linear_model import LinearRegression
+lr_model = LinearRegression()
+lr_model.fit(trainset.iloc[:,:-1], trainset.iloc[:,-1])
+
+t0 = time.time()
+lr_y = testset['y'].values # true y values for test set
+lr_y_fit = lr_model.predict(trainset.iloc[:,:-1]) # y of trainset
+lr_y_pred = lr_model.predict(testset.iloc[:,:-1]) # predicted y of test set
+tF = time.time()
+
+lr_residuals = lr_y_pred - lr_y
+lr_rmse = np.sqrt(np.sum(np.power(lr_residuals,2)) / len(lr_residuals))
+print('RMSE = %.2f' % lr_rmse)
+print('Time to train = %.2f seconds' % (tF - t0))
+
+f, (ax1, ax2) = plt.subplots(2, 1, figsize=(20,6))
+ax1.set_title('Test set')
+ax1.plot(testset.iloc[:,0], lr_y, 'b-')
+ax1.plot(testset.iloc[:,0], lr_y_pred, 'r-')
+ax2.set_title('Train set')
+ax2.plot(trainset.iloc[:,0], trainset.iloc[:,-1], 'b-')
+ax2.plot(trainset.iloc[:,0], lr_y_fit, 'r-')
+plt.show()
+
+# ___________ MULTIPLE LINEAR REGRESSION ON WINDOWS ___________ 
+from sklearn.linear_model import LinearRegression
+lr_model = LinearRegression()
+lr_model.fit(train_windows.iloc[:,:-1], train_windows.iloc[:,-1])
+
+t0 = time.time()
+lr_y = test_windows['Y'].values
+lr_y_fit = lr_model.predict(train_windows.iloc[:,:-1])
+lr_y_pred = lr_model.predict(test_windows.iloc[:,:-1])
+tF = time.time()
+
+lr_residuals = lr_y_pred - lr_y
+lr_rmse = np.sqrt(np.sum(np.power(lr_residuals,2)) / len(lr_residuals))
+print('RMSE = %.2f' % lr_rmse)
+print('Time to train = %.2f seconds' % (tF - t0))
+
+f, (ax1, ax2) = plt.subplots(2, 1, figsize=(20,6))
+ax1.set_title('Test set')
+ax1.plot(testset.iloc[5:,0], lr_y, 'b-')
+ax1.plot(testset.iloc[5:,0], lr_y_pred, 'r-')
+ax2.set_title('Train set')
+ax2.plot(trainset.iloc[5:,0], trainset.iloc[5:,-1], 'b-')
+ax2.plot(trainset.iloc[5:,0], lr_y_fit, 'r-')
+plt.show()
