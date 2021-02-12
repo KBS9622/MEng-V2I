@@ -51,26 +51,31 @@ print(dataset.head(3))
 
 X_train, X_test, y_train, y_test = train_test_split(dataset.iloc[:,:5], dataset.iloc[:,5], test_size=0.33, shuffle=False)
 
-print(X_train.shape)
-print(X_test.shape)
-print(y_train.shape)
-print(y_test.shape)
+# print(X_train.shape)
+# print(X_test.shape)
+# print(y_train.shape)
+# print(y_test.shape)
 
 # print(X_train)
 # print(X_test)
 # print(y_train)
 # print(y_test)
 
-# # create windows
-# w = 5
-# train_constructor = WindowSlider()
-# train_windows = train_constructor.collect_windows(trainset.iloc[:,1:], 
-#                                                   previous_y=False)
+trainset = dataset.iloc[:402,:]
+testset = dataset.iloc[402:,:]
+# print(testset)
 
-# test_constructor = WindowSlider()
-# test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
-#                                                 previous_y=False)
+# create windows
+w = 5
+train_constructor = WindowSlider()
+train_windows = train_constructor.collect_windows(trainset.iloc[:,1:], 
+                                                  previous_y=False)
 
+test_constructor = WindowSlider()
+test_windows = test_constructor.collect_windows(testset.iloc[:,1:],
+                                                previous_y=False)
+
+# # window slider with previous y included
 # train_constructor_y_inc = WindowSlider()
 # train_windows_y_inc = train_constructor_y_inc.collect_windows(trainset.iloc[:,1:], 
 #                                                   previous_y=True)
@@ -79,4 +84,4 @@ print(y_test.shape)
 # test_windows_y_inc = test_constructor_y_inc.collect_windows(testset.iloc[:,1:],
 #                                                 previous_y=True)
 
-# train_windows.head(3)
+print(train_windows.shape)
