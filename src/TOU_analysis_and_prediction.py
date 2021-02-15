@@ -124,7 +124,7 @@ class TOU(object):
 
         return time_idx_TOU_price
 
-    def create_and_fit_model(self, fitted_model_filename='fitted_model.pickle'):
+    def create_and_fit_model(self, seasonality = 12, fitted_model_filename='fitted_model.pickle'):
         """
         Creates Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors model
         and fits with the VAT-included TOU price data
@@ -135,7 +135,7 @@ class TOU(object):
 
         mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
                                         order=(1, 1, 1),
-                                        seasonal_order=(1, 1, 0, 12),
+                                        seasonal_order=(1, 1, 0, seasonality),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
         results = mod.fit()
