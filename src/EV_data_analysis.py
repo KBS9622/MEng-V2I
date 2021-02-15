@@ -78,13 +78,15 @@ class EV(object):
 
     def format_EV_data(self):
         """
-        Formats date and time in the 'timestamp' column
+        Renames the 'timestamp' column to 'time_stamp and formats date and time in the 'time_stamp' column
         :return: formatted DataFrame
         """
-
+        # loads the csv
         df = self.load_csv_data(self.file_name, self.subdir)
-
-        df['timestamp'] = pd.to_datetime(df['timestamp'], format='%d/%m/%Y %H:%M:%S')
+        # renames column 'timestamp' to 'time_stamp'
+        df = df.rename(columns={'timestamp':'time_stamp'})
+        # formats the values in 'time_stamp' to a datetime format
+        df['time_stamp'] = pd.to_datetime(df['time_stamp'], format='%d/%m/%Y %H:%M:%S')
 
         return df
 
@@ -277,7 +279,7 @@ class EV(object):
         self.data['soc'] = timeseries_soc
         self.data['charge_lvl'] = timeseries_charge_lvl
 
-    def graph_plotter(self, x='timestamp', y='P_regen', file_name='energy_consumption_with_regen.png',
+    def graph_plotter(self, x='time_stamp', y='P_regen', file_name='energy_consumption_with_regen.png',
                       subdir='test', date='test'):
         """
         Plots a graph according to the specified x and y, and saves it to the specified file name

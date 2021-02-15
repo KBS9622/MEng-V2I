@@ -184,7 +184,7 @@ class Simulation:
         # copies the current dataframe 'data' in ev_obj and drops columns then indexes with timestamps
         p_total = self.ev_obj.data.copy()
         p_total = p_total.drop(columns=cols_to_drop)
-        p_total = p_total.set_index('timestamp')
+        p_total = p_total.set_index('time_stamp')
         p_total = p_total.set_index(p_total.index
                                     + DateOffset(days=(beginning_of_time.floor(freq='D')
                                                        - p_total.iloc[0].name.floor(freq='D')).days))

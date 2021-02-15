@@ -1,8 +1,8 @@
 {
   "User_ID": "00000001",
   "_comment": "EV given parameters",
-  "SOC": 69.2258272386832,
-  "Charge_level": 13014.455520872441,
+  "SOC": 0.0,
+  "Charge_level": 0,
   "_comment2": "User defined parameter",
   "Charger_power": 3000,
   "TOU_threshold": 0,
@@ -16,7 +16,7 @@
     "Year": "",
     "Capacity": 18800
   },
-  "Manual_override": true,
+  "Manual_override": false,
   "System_consideration_span": 24,
   "Utilities_info": {
     "Supplier": "Octopus Energy",

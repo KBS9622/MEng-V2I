@@ -97,11 +97,12 @@ class TOU(object):
     def create_time_idx_TOU_price_csv(self):
         time_idx_TOU_price = self.data.copy()
 
-        time_idx_TOU_price['timestamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
-        # time_idx_TOU_price['timestamp'] += DateOffset(minutes=60)
+        # creates a new column named 'time_stamp' which is the sum of columns 'date' and 'from'
+        time_idx_TOU_price['time_stamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
+        # time_idx_TOU_price['time_stamp'] += DateOffset(minutes=60)
         cols_to_drop = ['date', 'from', 'code', 'region_name']
         time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
-        time_idx_TOU_price = time_idx_TOU_price.set_index('timestamp')
+        time_idx_TOU_price = time_idx_TOU_price.set_index('time_stamp')
 
         return time_idx_TOU_price
 
@@ -114,12 +115,12 @@ class TOU(object):
 
         time_idx_TOU_price = self.data.copy()
 
-        time_idx_TOU_price['timestamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
+        time_idx_TOU_price['time_stamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
 
         cols_to_drop = ['date', 'from', 'to', 'unit_rate_excl_vat']
         time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
 
-        time_idx_TOU_price = time_idx_TOU_price.set_index('timestamp')
+        time_idx_TOU_price = time_idx_TOU_price.set_index('time_stamp')
 
         return time_idx_TOU_price
 
@@ -208,11 +209,11 @@ class TOU(object):
         """
 
         avg = []
-        for timestamp in self.data['from'].unique():
-            timestamp_avg = self.data.loc[self.data['from'] == timestamp]['unit_rate_incl_vat'].mean()
-            avg.append(timestamp_avg)
+        for time_stamp in self.data['from'].unique():
+            time_stamp_avg = self.data.loc[self.data['from'] == time_stamp]['unit_rate_incl_vat'].mean()
+            avg.append(time_stamp_avg)
 
-        time_and_avg = {'timestamp': self.data['from'].unique(), 'avg': avg}
+        time_and_avg = {'time_stamp': self.data['from'].unique(), 'avg': avg}
         df_time_and_avg = pd.DataFrame(data=time_and_avg)
-        df_time_and_avg.plot(x='timestamp', y='avg', figsize=(10, 5))
+        df_time_and_avg.plot(x='time_stamp', y='avg', figsize=(10, 5))
         plt.savefig('./data/TOU_figures/TOU_yearly.png')

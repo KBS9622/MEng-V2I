@@ -76,13 +76,15 @@ pd.options.mode.chained_assignment = None
 drive_cycle_file = 'Device12_formatted.csv'
 tou_file = 'full_data.csv'
 
-drive_cycle_subdir = 'data\yun_solution_drive_cycle'
-tou_subdir = 'data\TOU_Data'
-json_path = ".\\utils\\user_config.json"
+# for Windows
+# drive_cycle_subdir = 'data\yun_solution_drive_cycle'
+# tou_subdir = 'data\TOU_Data'
+# json_path = ".\\utils\\user_config.json"
 
-# drive_cycle_subdir = 'data/yun_solution_drive_cycle'
-# tou_subdir = 'data/TOU_Data'
-# json_path = "./utils/user_config.json"
+# for Mac
+drive_cycle_subdir = 'data/yun_solution_drive_cycle'
+tou_subdir = 'data/TOU_Data'
+json_path = "./utils/user_config.json"
 
 simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
 for x in range(0, 5):
