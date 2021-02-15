@@ -138,9 +138,11 @@ class TOU(object):
                                         seasonal_order=(1, 1, 0, seasonality),
                                         enforce_stationarity=False,
                                         enforce_invertibility=False)
+        print('line 141')
         results = mod.fit()
+        print('line 143')
         results.save(fitted_model_filename)
-
+        print('line 145')
         return results
 
     def predict_and_compare(self, start, end, fitted_model_filename='fitted_model.pickle'):
