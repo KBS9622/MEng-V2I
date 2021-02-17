@@ -17,13 +17,12 @@
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
 # Replace "<your_UCL_id>" with your UCL user ID.
-#$ -wd /home/zceesko/Scratch
+#$ -wd /home/zceesko/Scratch/MEng-V2I
 
 # Your work should be done in $TMPDIR 
-cd $TMPDIR
 
 # Run the application and put the output into a file called date.txt
-python Hello_World.py > outputty.txt
+python src/train_TOU.py > SARIMA.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 tar -zcvf $HOME/Scratch/files_from_job_$JOB_ID.tar.gz $TMPDIR
