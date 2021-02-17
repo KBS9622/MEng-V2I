@@ -6,4 +6,5 @@
 # tou_obj = TOU(tou_file, tou_subdir)
 # tou_obj.create_and_fit_model(seasonality = 12, fitted_model_filename='cluster_TOU.pickle')
 
-print("Hello World")
+with open('test_file.txt', 'w') as f:
+    f.write("This is a sample file")
