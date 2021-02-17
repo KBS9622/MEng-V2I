@@ -17,7 +17,7 @@
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
 # Replace "<your_UCL_id>" with your UCL user ID.
-#$ -wd /home/zceesko/Scratch/MEng-V2I
+#$ -wd /home/zceesko/Scratch
 
 # Your work should be done in $TMPDIR 
 cd $TMPDIR
