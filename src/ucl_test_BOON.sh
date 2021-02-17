@@ -22,7 +22,7 @@
 # Your work should be done in $TMPDIR 
 
 # Run the application and put the output into a file called date.txt
-python src/train_TOU.py > SARIMA.txt
+python3 src/train_TOU.py > SARIMA.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 tar -zcvf $HOME/Scratch/files_from_job_$JOB_ID.tar.gz $TMPDIR
