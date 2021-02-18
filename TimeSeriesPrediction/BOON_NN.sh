@@ -18,16 +18,16 @@
 #$ -l tmpfs=15G
 
 # Set the name of the job.
-#$ -N Serial_Job
+#$ -N LSTM_old
 
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
 # Replace "<your_UCL_id>" with your UCL user ID.
 # the jobscript output and error files will be here
-#$ -wd /home/zceesko/Scratch
+#$ -wd /home/zceesko/Scratch/script_outputs
 
 # Your work should be done in $TMPDIR 
-cd MEng-V2I
+cd ../MEng-V2I
 
 # Modules to load for the non-MKL GPU version of tensorflow
 module unload compilers mpi
