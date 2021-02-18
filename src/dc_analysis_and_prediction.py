@@ -6,34 +6,13 @@ from statsmodels.tsa.statespace import sarimax
 from pandas.tseries.offsets import DateOffset
 
 
-class TOU(object):
+class DriveCycle(object):
 
-    def __init__(self, file_name, subdir='TOU_data'):
+    def __init__(self, file_name, preprocess_resample=False, subdir='combined'):
 
         self.file_name = file_name
         self.subdir = subdir
-        self.data = self.format_TOU_csv()
-        self.time_idx_TOU_price = self.create_time_idx_TOU_price_csv()
-
-    def load_xlsx_data(self, file_name, subdir=''):
-        """
-        Loads data from .xlsx file in to DataFrame
-
-        :param file_name: .xlsx file name in string
-        :return: extracted data in DataFrame
-        """
-
-        file_dir = os.path.realpath('../')
-        for root, dirs, files in os.walk(file_dir):
-            if root.endswith(subdir):
-                for name in files:
-                    if name == file_name:
-                        file_path = os.path.join(root, name)
-                        break
-
-        df = pd.read_excel(file_path)
-
-        return df
+        self.data = self.format_drive_cycle_csv(process=preprocess_resample)
 
     def load_csv_data(self, file_name, subdir='', header_exists=False):
         """
@@ -44,7 +23,7 @@ class TOU(object):
         :return: extracted data in DataFrame
         """
 
-        file_dir = os.path.realpath('./' + subdir)
+        file_dir = os.path.realpath('../' + subdir)
         # print(file_dir)
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
@@ -52,79 +31,34 @@ class TOU(object):
                     if name == file_name:
                         file_path = os.path.join(root, name)
         # print(file_path)
-        if not header_exists:
-            df = pd.read_csv(file_path, header=None)
-        else:
-            df = pd.read_csv(file_path)
+        df = pd.read_csv(file_path, parse_dates=['timeStamp'])
 
         return df
 
-    def format_TOU_data(self):
-        """
-        Removes unwanted features (columns) and formats date and time
-
-        :return: formatted and stripped DataFrame
-        """
-
-        df = self.load_csv_data(self.file_name, self.subdir)
-
-        cols_to_drop = ['code', 'gsp', 'region_name']
-        df = df.drop(columns=cols_to_drop)
-
-        df['date'] = pd.to_datetime(df['date'])
-        df['from'] = pd.to_timedelta(df['from'])
-        df['to'] = pd.to_timedelta(df['to'])
-
-        return df
-
-    def format_TOU_csv(self, header_exists=False):
+    def format_drive_cycle_csv(self, process, header_exists=True):
         data = self.load_csv_data(self.file_name, self.subdir, header_exists=header_exists)
 
         if not header_exists:
-            cols = ['date', 'from', 'code', 'region_name', 'unit_rate_incl_vat']
+            cols = ['timeStamp', 'speed']
             data.columns = cols
+        data['time_stamp'] = pd.to_datetime(data['timeStamp'])
+        cols_to_drop = ['timeStamp']
 
-        date_list = data['date'].str.split('T', n=1, expand=True)
-        date_list[1] = date_list[1].str.replace('Z', '')
+        if process:
+            outlier_index = data.loc[data['speed'] > 200, :].index
 
-        data['date'] = date_list[0]
-        data['from'] = date_list[1]
-        data['date'] = pd.to_datetime(data['date'])
-        data['from'] = pd.to_timedelta(data['from'])
+            for x in outlier_index:
+                data.loc[x, 'speed'] = data.loc[x - 1, 'speed']
+
+        data.drop(cols_to_drop, axis=1, inplace=True)
+        data = data.set_index('time_stamp')
+
+        if process:
+            data = data.resample("1S").first().ffill()
 
         return data
 
-    def create_time_idx_TOU_price_csv(self):
-        time_idx_TOU_price = self.data.copy()
-
-        # creates a new column named 'time_stamp' which is the sum of columns 'date' and 'from'
-        time_idx_TOU_price['time_stamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
-        # time_idx_TOU_price['time_stamp'] += DateOffset(minutes=60)
-        cols_to_drop = ['date', 'from', 'code', 'region_name']
-        time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
-        time_idx_TOU_price = time_idx_TOU_price.set_index('time_stamp')
-
-        return time_idx_TOU_price
-
-    def create_time_idx_TOU_price(self):
-        """
-        Creates a DataFrame of the TOU prices with VAT included indexed by their timestamps (date and time)
-
-        :return: created DataFrame
-        """
-
-        time_idx_TOU_price = self.data.copy()
-
-        time_idx_TOU_price['time_stamp'] = time_idx_TOU_price['date'] + time_idx_TOU_price['from']
-
-        cols_to_drop = ['date', 'from', 'to', 'unit_rate_excl_vat']
-        time_idx_TOU_price.drop(cols_to_drop, axis=1, inplace=True)
-
-        time_idx_TOU_price = time_idx_TOU_price.set_index('time_stamp')
-
-        return time_idx_TOU_price
-
-    def create_and_fit_model(self, seasonality = 12, fitted_model_filename='fitted_model.pickle'):
+    def create_and_fit_model(self, seasonality=12, fitted_model_filename='fitted_model_dc.pickle'):
         """
         Creates Seasonal AutoRegressive Integrated Moving Average with eXogenous regressors model
         and fits with the VAT-included TOU price data
@@ -133,7 +67,7 @@ class TOU(object):
         :return: fitted model object (same as the one saved in the pickle file)
         """
 
-        mod = sm.tsa.statespace.SARIMAX(self.time_idx_TOU_price,
+        mod = sm.tsa.statespace.SARIMAX(self.data,
                                         order=(1, 1, 1),
                                         seasonal_order=(1, 1, 0, seasonality),
                                         enforce_stationarity=False,
@@ -160,7 +94,7 @@ class TOU(object):
         pred = fitted_model.predict(start=start + DateOffset(minutes=30),
                                     end=end + DateOffset(minutes=30), dynamic=False)
         print(pred)
-        pred = pred.to_frame(name='TOU')
+        pred = pred.to_frame(name='DriveCycle')
         print(pred)
         pred = pred.set_index(pred.index - DateOffset(minutes=30))
         print(pred)
@@ -173,8 +107,7 @@ class TOU(object):
         else:
             unique_file_name = start.strftime('%Y-%m-%d') + '_to_' + end.strftime('%Y-%m-%d')
 
-
-        plt.savefig('./data/TOU_figures/TOU_actual_n_pred_'+unique_file_name+'.png')
+        plt.savefig('./data/TOU_figures/TOU_actual_n_pred_' + unique_file_name + '.png')
         return pred
 
     def plot_daily_TOU(self, date):
