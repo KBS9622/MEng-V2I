@@ -17,15 +17,19 @@
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
 # Replace "<your_UCL_id>" with your UCL user ID.
-#$ -wd /home/zceerch/Scratch
+#$ -wd /home/zceerch/MEng-V2I
 
 # Your work should be done in $TMPDIR 
-cd $TMPDIR
+cd MEng-V2I
+
+# Load the python3 module bundle
+module load python3/recommended
 
 # Run the application and put the output into a file called date.txt
-pwd > outputty.txt
+/usr/bin/time --verbose python3 src/train_TOU.py > SARIMA.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
-tar -zcvf $HOME/Scratch/files_from_job_$JOB_ID.tar.gz $TMPDIR
+# the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
+tar -zcvf $HOME/Scratch/script_outputs/files_from_job_$JOB_ID.tar.gz $TMPDIR
 
 # Make sure you have given enough time for the copy to complete!
