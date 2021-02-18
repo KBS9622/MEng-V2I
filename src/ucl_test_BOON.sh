@@ -18,10 +18,10 @@
 #  This is a necessary step as compute nodes cannot write to $HOME.
 # Replace "<your_UCL_id>" with your UCL user ID.
 # the jobscript output and error files will be here
-#$ -wd /home/zceesko/Scratch
+#$ -wd /home/zceesko/Scratch/script_outputs
 
 # Your work should be done in $TMPDIR 
-cd MEng-V2I
+cd ../MEng-V2I
 
 # Load the python3 module bundle
 module load python3/recommended
