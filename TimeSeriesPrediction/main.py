@@ -48,7 +48,7 @@ def main():
 
     # Min-Max Scaler #
     scaler = MinMaxScaler()
-    data[:,:] = scaler.fit_transform(data)
+    data.iloc[:,:] = scaler.fit_transform(data)
     print(type(data))
 
     # Split the Dataset #
