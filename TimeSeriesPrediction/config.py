@@ -17,10 +17,13 @@ parser.add_argument('--network', type=str, default='lstm', choices=['dnn', 'cnn'
 parser.add_argument('--transfer_learning', type=bool, default=False, help='transfer learning')
 
 parser.add_argument('--which_data', type=str, default='12_sep_oct_nov_nov_dec.csv', help='which data to use')
-parser.add_argument('--combined_path', type=str, default='./TimeSeriesPrediction/combined/', help='combined data path')
-# parser.add_argument('--combined_path', type=str, default='./combined/', help='combined data path')
+# parser.add_argument('--combined_path', type=str, default='./TimeSeriesPrediction/combined/', help='combined data path')
+parser.add_argument('--combined_path', type=str, default='./combined/', help='combined data path')
+# parser.add_argument('--weights_path', type=str, default='./TimeSeriesPrediction/results/weights/', help='weights path')
 parser.add_argument('--weights_path', type=str, default='./results/weights/', help='weights path')
+# parser.add_argument('--numpy_path', type=str, default='./TimeSeriesPrediction/results/numpy/', help='numpy files path')
 parser.add_argument('--numpy_path', type=str, default='./results/numpy/', help='numpy files path')
+# parser.add_argument('--plots_path', type=str,  default='./TimeSeriesPrediction/results/plots/', help='plots path')
 parser.add_argument('--plots_path', type=str,  default='./results/plots/', help='plots path')
 
 parser.add_argument('--valid_start', type=str, default='2017-12-12 00:00:00', help='validation start date')
