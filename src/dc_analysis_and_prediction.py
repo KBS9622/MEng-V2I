@@ -96,8 +96,8 @@ class DriveCycle(object):
         """
 
         fitted_model = sarimax.SARIMAXResultsWrapper.load(fitted_model_filename)
-        pred = fitted_model.predict(dynamic=False)
-        # pred = fitted_model.predict(start=start, end=end, dynamic=False)
+        # pred = fitted_model.predict(dynamic=False)
+        pred = fitted_model.predict(start=start, end=end, dynamic=False)
         print(pred)
         pred = pred.to_frame(name='DriveCycle')
         print(pred)
