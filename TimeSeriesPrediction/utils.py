@@ -111,8 +111,9 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     y_train = data.copy()[data.index < valid_start][label]
     X_train = X_train.to_numpy()
     y_train = y_train.to_numpy()
+    print('X_train before:\n{}'.format(X_train.shape))
     X_train = X_train[..., np.newaxis]
-
+    print('X_train after:\n{}'.format(X_train.shape))
     # Train set
     # train = data.copy()[data.index < valid_start][[feature]]
     # train_shifted = train.copy()
