@@ -22,10 +22,13 @@ class DriveCycle(object):
         :param subdir: optional parameter to specify the subdirectory of the file
         :return: extracted data in DataFrame
         """
-
-        file_dir = os.path.realpath('TimeSeriesPrediction' + subdir)
+        
+        file_dir = os.path.realpath('../TimeSeriesPrediction' + subdir)
         # print(file_dir)
         for root, dirs, files in os.walk(file_dir):
+            print('a:{}'.format(root))
+            print('b:{}'.format(dirs))
+            print('c:{}'.format(files))
             if root.endswith(subdir):
                 for name in files:
                     if name == file_name:
