@@ -103,7 +103,7 @@ class DriveCycle(object):
         print(pred)
         # pred = pred.set_index(pred.index - DateOffset(minutes=30))
         # print(pred)
-        ax = self.time_idx_TOU_price[start:end].plot(label='actual')
+        ax = self.data[start:end].plot(label='actual')
         pred.plot(ax=ax, label='predicted', figsize=(10, 5))
         plt.legend()
 
