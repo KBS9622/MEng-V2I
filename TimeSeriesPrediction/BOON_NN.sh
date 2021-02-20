@@ -12,13 +12,13 @@
 #$ -l gpu=1
 
 # request a V100 node only, the line below says EF because only E-type and F-type nodes has nVidia Tesla V100s
-#$ -ac allow=EF
+# #$ -ac allow=EF
 
 # Request 15 gigabyte of TMPDIR space (default is 10 GB - remove if cluster is diskless)
 #$ -l tmpfs=15G
 
 # Set the name of the job.
-#$ -N LSTM_old_2
+#$ -N LSTM_old_3
 
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
@@ -42,7 +42,7 @@ module load torch-deps
 # pip3 install --user <python3pkg>
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
-/usr/bin/time --verbose python3 TimeSeriesPrediction/main.py --network 'lstm' --transfer_learning False --mode 'train' > LSTM_old_2.txt
+/usr/bin/time --verbose python3 TimeSeriesPrediction/main.py --network 'lstm' --transfer_learning False --mode 'train' > LSTM_old_3.txt
 pwd > ayoooo.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
