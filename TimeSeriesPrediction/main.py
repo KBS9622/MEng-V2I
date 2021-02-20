@@ -48,7 +48,8 @@ def main():
 
     # Min-Max Scaler #
     scaler = MinMaxScaler()
-    data = scaler.fit_transform(data)
+    data[:,:] = scaler.fit_transform(data)
+    print(type(data))
 
     # Split the Dataset #
     train_X, train_Y, val_X, val_Y, test_X, test_Y, test_shifted = \

@@ -65,7 +65,7 @@ def load_data(path, which_data, preprocess, resample):
 
     data.drop(['date'], axis=1, inplace=True)
 
-    print(type(data))
+    print(data)
 
     return data
 
