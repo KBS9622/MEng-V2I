@@ -5,7 +5,7 @@ dc_file = '12_sep_oct_nov_nov_dec.csv'
 
 dc_obj = DriveCycle(dc_file)
 # uncomment line below when training
-dc_obj.create_and_fit_model(seasonality = 12, fitted_model_filename='fitted_model_dc.pickle')
+dc_obj.create_and_fit_model(seasonality = 2, fitted_model_filename='fitted_model_dc.pickle')
 
 # start_time1 = pd.to_datetime('2019-01-31 00:00:00')
 # end_time1 = pd.to_datetime('2019-01-31 23:30:00')
