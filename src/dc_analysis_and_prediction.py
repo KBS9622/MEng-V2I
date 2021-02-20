@@ -79,7 +79,7 @@ class DriveCycle(object):
         print('line 145')
         return results
 
-    def predict_and_compare(self, start, end, fitted_model_filename='fitted_model.pickle'):
+    def predict_and_compare(self, start, end, fitted_model_filename='fitted_model_dc.pickle'):
         """
         Predicts the TOU prices throughout the specified range and plots against actual TOU prices
 
@@ -91,13 +91,12 @@ class DriveCycle(object):
 
         fitted_model = sarimax.SARIMAXResultsWrapper.load(fitted_model_filename)
 
-        pred = fitted_model.predict(start=start + DateOffset(minutes=30),
-                                    end=end + DateOffset(minutes=30), dynamic=False)
+        pred = fitted_model.predict(start=start, end=end, dynamic=False)
         print(pred)
         pred = pred.to_frame(name='DriveCycle')
         print(pred)
-        pred = pred.set_index(pred.index - DateOffset(minutes=30))
-        print(pred)
+        # pred = pred.set_index(pred.index - DateOffset(minutes=30))
+        # print(pred)
         ax = self.time_idx_TOU_price[start:end].plot(label='actual')
         pred.plot(ax=ax, label='predicted', figsize=(10, 5))
         plt.legend()
@@ -107,7 +106,7 @@ class DriveCycle(object):
         else:
             unique_file_name = start.strftime('%Y-%m-%d') + '_to_' + end.strftime('%Y-%m-%d')
 
-        plt.savefig('./data/TOU_figures/TOU_actual_n_pred_' + unique_file_name + '.png')
+        plt.savefig('./data/dc_figures/dc_actual_n_pred_' + unique_file_name + '.png')
         return pred
 
     def plot_daily_TOU(self, date):
