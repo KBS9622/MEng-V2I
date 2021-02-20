@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--seed', type=int, default=1234, help='fix seed for reproducibility')
 parser.add_argument('--batch_size', type=int, default=256, help='mini-batch size')
 parser.add_argument('--num_epochs', type=int, default=10, help='total epoch')
-parser.add_argument('--window', type=int, default=180, help='the number of window, unit : second')
+parser.add_argument('--window', type=int, default=1, help='the number of window, unit : second')
 
 parser.add_argument('--plot', type=bool, default=False, help='plot graph or not')
 parser.add_argument('--preprocess', type=bool, default=True, help='remove outliers')

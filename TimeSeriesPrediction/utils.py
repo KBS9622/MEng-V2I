@@ -159,7 +159,7 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     X_test = data.copy()[data.index >= test_start][feature].to_numpy()
     y_test = data.copy()[data.index >= test_start][label].to_numpy()
 
-    test_shifted = data.copy()[data.index >= test_start][label].copy()
+    test_shifted = data.copy()[data.index >= test_start]
     test_shifted['{}_t+1'.format(feature)] = test_shifted[feature].shift(-1)
 
     for t in range(1, T + 1):
