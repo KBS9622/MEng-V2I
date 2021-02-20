@@ -23,7 +23,7 @@ class DriveCycle(object):
         :return: extracted data in DataFrame
         """
 
-        file_dir = os.path.realpath('../' + subdir)
+        file_dir = os.path.realpath('TimeSeriesPrediction' + subdir)
         # print(file_dir)
         for root, dirs, files in os.walk(file_dir):
             if root.endswith(subdir):
