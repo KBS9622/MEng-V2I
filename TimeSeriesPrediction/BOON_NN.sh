@@ -27,7 +27,7 @@
 #$ -wd /home/zceesko/Scratch/script_outputs
 
 # Your work should be done in $TMPDIR 
-cd ../MEng-V2I
+cd ../MEng-V2I/TimeSeriesPrediction
 
 # Modules to load for the non-MKL GPU version of tensorflow
 module unload compilers mpi

@@ -21,7 +21,7 @@
 #$ -wd /home/zceesko/Scratch/script_outputs
 
 # Your work should be done in $TMPDIR 
-cd ../MEng-V2I/TimeSeriesPrediction
+cd ../MEng-V2I
 
 # Load the python3 module bundle
 module load python3/recommended
