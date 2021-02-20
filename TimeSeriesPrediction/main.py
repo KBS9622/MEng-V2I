@@ -231,6 +231,7 @@ if __name__ == "__main__":
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     main()
+    print('hi Boon')
 
     # 1. be able to set test start and end date #
     # 2. output a dataframe consisted of 'datetime' and 'speed (pred)' and 'speed (actual)' #
