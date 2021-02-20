@@ -38,7 +38,7 @@ def main():
     # id = config.which_data.split('_')[0]
     id = 12 #BOON added
     print("Data of {} is successfully Loaded!".format(config.which_data))
-    print(data)
+    print(type(data))
     print(data.shape)
 
     # Plot Time-series Data #
