@@ -8,7 +8,7 @@ from pandas.tseries.offsets import DateOffset
 
 class DriveCycle(object):
 
-    def __init__(self, file_name, preprocess_resample=False, subdir='combined/'):
+    def __init__(self, file_name, preprocess_resample=True, subdir='combined/'):
 
         self.file_name = file_name
         self.subdir = subdir
