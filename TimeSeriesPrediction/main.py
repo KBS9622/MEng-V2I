@@ -34,7 +34,7 @@ def main():
         make_dirs(path)
 
     # Prepare Data #
-    data = load_data(config.combined_path, config.which_data, config.preprocess, config.resample)[config.feature]
+    data = load_data(config.combined_path, config.which_data, config.preprocess, config.resample)
     id = config.which_data.split('_')[0]
     print("Data of {} is successfully Loaded!".format(config.which_data))
 
