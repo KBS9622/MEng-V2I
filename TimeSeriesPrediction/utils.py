@@ -108,7 +108,7 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
 
     # new CODEEEEEEEWEEEE
     X_train = data.copy()[data.index < valid_start][feature]
-    y_train = data.copy()[data.index < valid_start][[label]]
+    y_train = data.copy()[data.index < valid_start][label]
     X_train = X_train.to_numpy()
     y_train = y_train.to_numpy()
     X_train = X_train[..., np.newaxis]
@@ -138,7 +138,7 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     data.index = pd.to_datetime(data.index)
 
     X_valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][feature]
-    y_valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][[label]]
+    y_valid = data.copy()[(data.index >= look_back_dt) & (data.index < test_start)][label]
 
     # valid_shifted = valid.copy()
     # valid_shifted['{}+1'.format(feature)] = valid_shifted[feature].shift(-1)
@@ -157,9 +157,9 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
 
     # Test set
     X_test = data.copy()[data.index >= test_start][feature].to_numpy()
-    y_test = data.copy()[data.index >= test_start][[label]].to_numpy()
+    y_test = data.copy()[data.index >= test_start][label].to_numpy()
 
-    test_shifted = data.copy()[data.index >= test_start][[label]].copy()
+    test_shifted = data.copy()[data.index >= test_start][label].copy()
     test_shifted['{}_t+1'.format(feature)] = test_shifted[feature].shift(-1)
 
     for t in range(1, T + 1):
