@@ -41,6 +41,8 @@ def load_data(path, which_data, preprocess, resample):
                     'gps_speed'
                     ]
 
+    print(data)
+
     if preprocess:
         outlier_index = data.loc[data['speed'] > 200, :].index
 

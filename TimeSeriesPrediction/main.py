@@ -35,9 +35,10 @@ def main():
 
     # Prepare Data #
     data = load_data(config.combined_path, config.which_data, config.preprocess, config.resample)
-    id = config.which_data.split('_')[0]
+    # id = config.which_data.split('_')[0]
+    id = 12 #BOON added
     print("Data of {} is successfully Loaded!".format(config.which_data))
-
+    print(data)
     print(data.shape)
 
     # Plot Time-series Data #
@@ -47,7 +48,7 @@ def main():
 
     # Min-Max Scaler #
     scaler = MinMaxScaler()
-    data[config.feature] = scaler.fit_transform(data)
+    data = scaler.fit_transform(data)
 
     # Split the Dataset #
     train_X, train_Y, val_X, val_Y, test_X, test_Y, test_shifted = \
