@@ -23,16 +23,17 @@ class DriveCycle(object):
         :return: extracted data in DataFrame
         """
         
-        file_dir = os.path.realpath('TimeSeriesPrediction' + subdir)
+        # file_dir = os.path.realpath('TimeSeriesPrediction' + subdir)
         print(os.getcwd())
-        for root, dirs, files in os.walk(file_dir):
-            print('a:{}'.format(root))
-            print('b:{}'.format(dirs))
-            print('c:{}'.format(files))
-            if root.endswith(subdir):
-                for name in files:
-                    if name == file_name:
-                        file_path = os.path.join(root, name)
+        # for root, dirs, files in os.walk(file_dir):
+        #     print('a:{}'.format(root))
+        #     print('b:{}'.format(dirs))
+        #     print('c:{}'.format(files))
+        #     if root.endswith(subdir):
+        #         for name in files:
+        #             if name == file_name:
+        #                 file_path = os.path.join(root, name)
+        file_path = os.path.realpath(file_name)
         print(file_path)
         df = pd.read_csv(file_path, parse_dates=['timeStamp'])
 
@@ -44,6 +45,7 @@ class DriveCycle(object):
         if not header_exists:
             cols = ['timeStamp', 'speed']
             data.columns = cols
+        data = data.loc[:,['timeStamp', 'speed']]
         data['time_stamp'] = pd.to_datetime(data['timeStamp'])
         cols_to_drop = ['timeStamp']
 
