@@ -162,8 +162,9 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     test_shifted = data.copy()[data.index >= test_start]
     test_shifted['{}_t+1'.format(label)] = test_shifted[label].shift(-1)
 
-    for t in range(1, T + 1):
-        test_shifted['{}_t-'.format(feature) + str(T - t)] = test_shifted[feature].shift(T - t)
+    for feat in feature:
+        for t in range(1, T + 1):
+            test_shifted['{}_t-'.format(feat) + str(T - t)] = test_shifted[feat].shift(T - t)
 
     test_shifted = test_shifted.dropna(how='any')
 
