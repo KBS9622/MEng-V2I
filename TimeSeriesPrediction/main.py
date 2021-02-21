@@ -92,6 +92,7 @@ def main():
 
         # If fine-tuning #
         if config.transfer_learning:
+            print('TL: True')
             model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_12.pkl'.format(config.network))))
 
             for param in model.parameters():
@@ -180,10 +181,15 @@ def main():
                 if curr_val_loss < best_val_loss:
                     best_val_loss = min(curr_val_loss, best_val_loss)
 
+                    # if config.transfer_learning:
+                    #     torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_transfer.pkl'.format(config.network, id)))
+                    # else:
+                    #     torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}.pkl'.format(config.network, id)))
+
                     if config.transfer_learning:
-                        torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_transfer.pkl'.format(config.network, id)))
+                        torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_transfer_BOON_reshaped.pkl'.format(config.network, id)))
                     else:
-                        torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}.pkl'.format(config.network, id)))
+                        torch.save(model.state_dict(), os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_BOON_reshaped.pkl'.format(config.network, id)))
 
                     print("Best model is saved!\n")
                     best_val_improv = 0
