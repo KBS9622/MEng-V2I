@@ -91,7 +91,9 @@ def main():
     if config.mode == 'train':
 
         # If fine-tuning #
+        print('config.TL = {}'.format(config.transfer_learning))
         if config.transfer_learning:
+            print('config.TL = {}'.format(config.transfer_learning))
             print('TL: True')
             model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_12.pkl'.format(config.network))))
 
