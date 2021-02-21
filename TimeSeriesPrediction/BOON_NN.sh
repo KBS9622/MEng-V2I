@@ -3,7 +3,7 @@
 # Batch script to run a serial job under SGE.
 
 # Request 24 hours of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=05:30:0
+#$ -l h_rt=01:30:0
 
 # Request 1 terabyte of RAM (must be an integer followed by M, G, or T)
 #$ -l mem=32G
@@ -43,6 +43,7 @@ module load torch-deps
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
 /usr/bin/time --verbose python3 main.py --network 'lstm' --transfer_learning False --mode 'train' --input_size 7 > LSTM_old_4.txt
+python3 config.py > LSTM_old_4_config.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 # the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
