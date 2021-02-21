@@ -18,7 +18,7 @@
 #$ -l tmpfs=15G
 
 # Set the name of the job.
-#$ -N LSTM_old_3
+#$ -N LSTM_old_3_test
 
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
@@ -42,8 +42,7 @@ module load torch-deps
 # pip3 install --user <python3pkg>
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
-/usr/bin/time --verbose python3 main.py --network 'lstm' --transfer_learning False --mode 'train' > LSTM_old_3.txt
-pwd > ayoooo.txt
+/usr/bin/time --verbose python3 main.py --network 'lstm' --transfer_learning False --mode 'test' > LSTM_old_3_test.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 # the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
