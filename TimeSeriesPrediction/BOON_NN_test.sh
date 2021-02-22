@@ -18,7 +18,7 @@
 #$ -l tmpfs=15G
 
 # Set the name of the job.
-#$ -N LSTM_old_3_test
+#$ -N LSTM_old_4_test
 
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
