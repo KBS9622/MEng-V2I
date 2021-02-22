@@ -157,8 +157,8 @@ class TOU(object):
 
         fitted_model = sarimax.SARIMAXResultsWrapper.load(fitted_model_filename)
 
-        pred = fitted_model.predict(start=start + DateOffset(minutes=30),
-                                    end=end + DateOffset(minutes=30), dynamic=False)
+        pred = fitted_model.predict(start=start,
+                                    end=end, dynamic=False)
         print(pred)
         pred = pred.to_frame(name='TOU')
         print(pred)
