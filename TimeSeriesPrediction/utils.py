@@ -112,8 +112,8 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     X_train = X_train.to_numpy()
     y_train = y_train.to_numpy()
     print('X_train before:\n{}'.format(X_train.shape))
-    X_train = X_train[..., np.newaxis]
-    # X_train = X_train.reshape((X_train.shape[0],1,X_train.shape[1]))
+    # X_train = X_train[..., np.newaxis]
+    X_train = X_train.reshape((X_train.shape[0],1,X_train.shape[1]))
     print('X_train after:\n{}'.format(X_train.shape))
     # Train set
     # train = data.copy()[data.index < valid_start][[feature]]
@@ -155,8 +155,8 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     X_valid = X_valid.to_numpy()
     y_valid = y_valid.to_numpy()
 
-    X_valid = X_valid[..., np.newaxis]
-    # X_valid = X_valid.reshape((X_valid.shape[0],1,X_valid.shape[1]))
+    # X_valid = X_valid[..., np.newaxis]
+    X_valid = X_valid.reshape((X_valid.shape[0],1,X_valid.shape[1]))
 
     # Test set
     X_test = data.copy()[data.index >= test_start][feature].to_numpy()
@@ -174,8 +174,8 @@ def get_time_series_data_(data, valid_start, test_start, feature, label, T, prin
     # X_test = test_shifted[['{}_t-'.format(feature) + str(T - t) for t in range(1, T + 1)]].to_numpy()
     # y_test = test_shifted['{}_t+1'.format(feature)].to_numpy()
 
-    X_test = X_test[..., np.newaxis]
-    # X_test = X_test.reshape((X_test.shape[0],1,X_test.shape[1]))
+    # X_test = X_test[..., np.newaxis]
+    X_test = X_test.reshape((X_test.shape[0],1,X_test.shape[1]))
 
     # temp
     print_ratio = True
