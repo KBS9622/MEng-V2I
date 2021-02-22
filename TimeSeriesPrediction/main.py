@@ -20,6 +20,10 @@ device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 
 def main():
+    #print the config args
+    print(config.transfer_learning)
+    print(config.mode)
+    print(config.input_size)
 
     # Fix Seed for Reproducibility #
     random.seed(config.seed)

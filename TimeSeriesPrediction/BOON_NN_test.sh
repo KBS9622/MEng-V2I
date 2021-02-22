@@ -42,8 +42,7 @@ module load torch-deps
 # pip3 install --user <python3pkg>
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
-/usr/bin/time --verbose python3 main.py --network 'lstm' --transfer_learning False --mode 'test' --input_size 7 > LSTM_old_3_test.txt
-python3 config.py > LSTM_old_3_test_config.txt
+/usr/bin/time --verbose python3 main.py --network 'lstm' --mode 'test' --input_size 1 > LSTM_old_3_test.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 # the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
