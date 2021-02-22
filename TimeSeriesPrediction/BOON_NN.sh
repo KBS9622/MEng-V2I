@@ -43,6 +43,7 @@ module load torch-deps
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
 /usr/bin/time --verbose python3 main.py --network 'lstm' --mode 'train' --input_size 7 > LSTM_old_4.txt
+mail -s 'LSTM_old_4 done' zceesko@ucl.ac.uk
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 # the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
