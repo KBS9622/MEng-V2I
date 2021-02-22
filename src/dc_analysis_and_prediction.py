@@ -72,8 +72,8 @@ class DriveCycle(object):
         :param fitted_model_filename: pickle file to save the fitted model
         :return: fitted model object (same as the one saved in the pickle file)
         """
-
-        mod = sm.tsa.statespace.SARIMAX(self.data,
+        train_data = self.data.loc[:2017-12-22]
+        mod = sm.tsa.statespace.SARIMAX(train_data,
                                         order=(1, 1, 1),
                                         seasonal_order=(1, 1, 0, seasonality),
                                         enforce_stationarity=False,
