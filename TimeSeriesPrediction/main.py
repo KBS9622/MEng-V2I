@@ -211,9 +211,9 @@ def main():
 
         # Prepare Network #
         if config.transfer_learning:
-            model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}.pkl'.format(config.network, id))))
+            model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_transfer_BOON_reshaped.pkl'.format(config.network, id))))
         else:
-            model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}.pkl'.format(config.network, id))))
+            model.load_state_dict(torch.load(os.path.join(config.weights_path, 'BEST_{}_Device_ID_{}_BOON_reshaped.pkl'.format(config.network, id))))
 
         print("{} for Device ID {} is successfully loaded!".format((config.network).upper(), id))
 
