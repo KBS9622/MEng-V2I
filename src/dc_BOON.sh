@@ -12,7 +12,7 @@
 #$ -l tmpfs=15G
 
 # Set the name of the job.
-#$ -N dc_SARIMA
+#$ -N dc_SARIMA_test
 
 # Set the working directory to somewhere in your scratch space.  
 #  This is a necessary step as compute nodes cannot write to $HOME.
@@ -32,7 +32,7 @@ module load python3/recommended
 #pip3 install --user <python3pkg>
 
 # Run the application and put the output into a file called SARIMA.txt, placed in the current directory, after any cd
-/usr/bin/time --verbose python3 src/train_dc.py > dc_SARIMA.txt
+/usr/bin/time --verbose python3 src/train_dc.py > dc_SARIMA_test.txt
 
 # Preferably, tar-up (archive) all output files onto the shared scratch area
 # the $TMPDIR at the end means that the tar file is compressing the TMPDIR folder for that job
