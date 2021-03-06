@@ -4,31 +4,20 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D # <--- This is important for 3d plotting 
 import pandas as pd
 
-# To generate some test data
-# x = np.random.randn(500)
-# y = np.random.randn(500)
+def show_figure(fig):
 
-# XY = np.stack((x,y),axis=-1)
+    # create a dummy figure and use its
+    # manager to display "fig"  
+    dummy = plt.figure()
+    new_manager = dummy.canvas.manager
+    new_manager.canvas.figure = fig
+    fig.set_canvas(new_manager.canvas)
 
-# def selection(XY, limitXY=[[-2,+2],[-2,+2]]):
-#         XY_select = []
-#         for elt in XY:
-#             if elt[0] > limitXY[0][0] and elt[0] < limitXY[0][1] and elt[1] > limitXY[1][0] and elt[1] < limitXY[1][1]:
-#                 XY_select.append(elt)
-
-#         return np.array(XY_select)
-
-# XY_select = selection(XY, limitXY=[[-2,+2],[-2,+2]])
-
-
-file_path = 'Device13_formatted.csv'
+file_path = 'Device12_formatted.csv'
 df = pd.read_csv(file_path)
 df = df[(df['speed_mps']!=0) & (df['accel_mps2']!=0)]
-# df = df.set_index('timestamp')
-# start_time = pd.to_datetime('2017-09-25 13:41:41')
-# end_time = pd.to_datetime('2017-09-30 23:30:00')
-# df = df.loc[0:100000,:]
-df = df.loc[100001:200000,:]
+df = df.loc[0:100000,:]
+# df = df.loc[100001:200000,:]
 # df = df.loc[200001:300000,:]
 print(df['speed_mps'].min())
 print(df['speed_mps'].max())
@@ -65,11 +54,20 @@ min_height = np.min(dz)
 rgba = [cmap((k-min_height)/max_height) for k in dz] 
 
 ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
-plt.title("speed vs accel for ID 13 100k - 200k Data")
+plt.title("speed vs accel for ID 12 0 - 100k Data")
 plt.xlabel("speed (mps)")
 plt.ylabel("accel (mps2)")
-# plt.savefig("Zoomed_id13_100k_to_200k_observations")
+plt.savefig("id12_0_to_100k_observations")
 plt.show()
+
+
+# import pickle
+# # with open('sinus.pickle', 'wb') as f: # should be 'wb' rather than 'w'
+# #     pickle.dump(fig, f) 
+
+# fig_handle = pickle.load(open('sinus.pickle','rb'))
+# plt.show(show_figure(fig_handle))
+
 
 
 # fig = plt.figure()
