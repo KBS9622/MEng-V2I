@@ -21,11 +21,16 @@ import pandas as pd
 # XY_select = selection(XY, limitXY=[[-2,+2],[-2,+2]])
 
 
-file_path = 'test_3d_histo.csv'
+file_path = 'Device12_formatted.csv'
 df = pd.read_csv(file_path)
-# print(df['Real_speed'])
-x = df['Fake_speed'].to_numpy()
-y = df['Fake_acc'].to_numpy()
+# df = df.set_index('timestamp')
+# start_time = pd.to_datetime('2017-09-25 13:41:41')
+# end_time = pd.to_datetime('2017-09-30 23:30:00')
+# df = df.loc[0:100000,:]
+df = df.loc[200001:300000,:]
+print(df['accel_mps2'].max())
+x = df['speed_mps'].to_numpy()
+y = df['accel_mps2'].to_numpy()
 
 # xAmplitudes = np.array(XY_select)[:,0]#your data here
 # yAmplitudes = np.array(XY_select)[:,1]#your other data here
@@ -35,7 +40,7 @@ fig = plt.figure() #create a canvas, tell matplotlib it's 3d
 ax = fig.add_subplot(111, projection='3d')
 
 
-hist, xedges, yedges = np.histogram2d(x, y, bins=(10,10), range = [[0,+80],[-10,+10]]) # you can change your bins, and the range on which to take data
+hist, xedges, yedges = np.histogram2d(x, y, bins=(10,10), range = [[0,+35],[-6,+14]]) # you can change your bins, and the range on which to take data
 # hist is a 7X7 matrix, with the populations for each of the subspace parts.
 xpos, ypos = np.meshgrid(xedges[:-1]+xedges[1:], yedges[:-1]+yedges[1:]) -(xedges[1]-xedges[0])
 
@@ -55,11 +60,16 @@ min_height = np.min(dz)
 rgba = [cmap((k-min_height)/max_height) for k in dz] 
 
 ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
-plt.title("X vs. Y Amplitudes for ____ Data")
-plt.xlabel("My X data source")
-plt.ylabel("My Y data source")
-plt.savefig("Your_title_goes_here")
+plt.title("speed vs accel for ID 12 200k - 300k Data")
+plt.xlabel("speed (mps)")
+plt.ylabel("accel (mps2)")
+plt.savefig("Device12_200k_to_300k_observations")
 plt.show()
+
+
+
+
+
 
 
 # import numpy as np
