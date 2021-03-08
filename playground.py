@@ -13,65 +13,98 @@ def show_figure(fig):
     new_manager.canvas.figure = fig
     fig.set_canvas(new_manager.canvas)
 
-# file_path = 'Device12_formatted.csv'
-# df = pd.read_csv(file_path)
-# df = df[(df['speed_mps']!=0) & (df['accel_mps2']!=0)]
-# df = df.loc[0:100000,:]
-# # df = df.loc[100001:200000,:]
-# # df = df.loc[200001:300000,:]
-# print(df['speed_mps'].min())
-# print(df['speed_mps'].max())
-# print(df['accel_mps2'].min())
-# print(df['accel_mps2'].max())
-# x = df['speed_mps'].to_numpy()
-# y = df['accel_mps2'].to_numpy()
-
-
-file_path = 'test_3d_histo.csv'
+file_path = 'Device13_formatted.csv'
 df = pd.read_csv(file_path)
-df = df[(df['Fake_speed']!=0) & (df['Fake_acc']!=0)]
-print(df['Fake_speed'].min())
-print(df['Fake_speed'].max())
-print(df['Fake_acc'].min())
-print(df['Fake_acc'].max())
-x = df['Fake_speed'].to_numpy()
-y = df['Fake_acc'].to_numpy()
+# remove observations when nothing happens as it can drown out the graph
+df = df[(df['speed_mps']!=0) & (df['accel_mps2']!=0)]
+# print(df)
+# df = df.loc[0:100000,:]
+# df = df.loc[100001:200000,:]
+df = df.loc[200001:300000,:]
+print(df['speed_mps'].min())
+print(df['speed_mps'].max())
+print(df['accel_mps2'].min())
+print(df['accel_mps2'].max())
+# x axis is the speed
+x = df['speed_mps'].to_numpy()
+# y axis is the acceleration
+y = df['accel_mps2'].to_numpy()
 
-# fig = plt.figure() #create a canvas, tell matplotlib it's 3d
-# ax = fig.add_subplot(111, projection='3d')
+
+# file_path = 'WGANGP_Epoch470.csv'
+# df = pd.read_csv(file_path)
+
+# # remove observations when nothing happens as it can drown out the graph
+# df = df[(df['Fake_speed']!=0) & (df['Fake_acc']!=0)]
+# # convert the units to metres per second from km/h
+# df = df/3.6
+# print(df['Fake_speed'].min())
+# print(df['Fake_speed'].max())
+# print(df['Fake_acc'].min())
+# print(df['Fake_acc'].max())
+# # x axis is the speed
+# x = df['Fake_speed'].to_numpy()
+# # y axis is the acceleration
+# y = df['Fake_acc'].to_numpy()
+
+# # remove observations when nothing happens as it can drown out the graph
+# df = df[(df['Real_speed']!=0) & (df['Real_acc']!=0)]
+# # convert the units to metres per second from km/h
+# df = df/3.6
+# print(df['Real_speed'].min())
+# print(df['Real_speed'].max())
+# print(df['Real_acc'].min())
+# print(df['Real_acc'].max())
+# # x axis is the speed
+# x = df['Real_speed'].to_numpy()
+# # y axis is the acceleration
+# y = df['Real_acc'].to_numpy()
 
 
-hist, xedges, yedges = np.histogram2d(x, y, bins=20)#, range = [[0,+30],[-0.5,0.5]]) # you can change your bins, and the range on which to take data
+hist, xedges, yedges = np.histogram2d(x, y, bins=20, range = [[0,+30],[-5,5]]) # you can change your bins, and the range on which to take data
 # hist is a 7X7 matrix, with the populations for each of the subspace parts.
-print(hist)
-print(xedges)
-print(yedges)
+# print(hist)
+# print(xedges)
+# print(yedges)
 
 xpos, ypos = np.meshgrid(xedges[:-1], yedges[:-1], indexing="ij")
 
+# 3D histogram
+fig = plt.figure() #create a canvas, tell matplotlib it's 3d
+ax = fig.add_subplot(111, projection='3d')
+xpos = xpos.flatten()
+ypos = ypos.flatten()
+zpos = np.zeros_like (xpos)
 
-# xpos = xpos.flatten()
-# ypos = ypos.flatten()
-# zpos = np.zeros_like (xpos)
-
-# dx = xedges [1] - xedges [0]
-# dy = yedges [1] - yedges [0]
+dx = xedges [1] - xedges [0]
+dy = yedges [1] - yedges [0]
 dz = hist.flatten()
 
 cmap = plt.cm.get_cmap('jet') # Get desired colormap - you can change this!
 max_height = np.max(dz)   # get range of colorbars so we can normalize
 min_height = np.min(dz)
-# # scale each z to [0,1], and get their rgb values
+# scale each z to [0,1], and get their rgb values
 rgba = [cmap((k-min_height)/max_height) for k in dz] 
 
-# ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
-# plt.title("speed vs accel for ID 12 0 - 100k Data")
-# plt.xlabel("speed (mps)")
-# plt.ylabel("accel (mps2)")
-# plt.savefig("id12_0_to_100k_observations")
-# plt.show()
+ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
+plt.title("speed vs accel for id 13 (200-300k) Data")
+plt.xlabel("speed (mps)")
+plt.ylabel("accel (mps2)")
+plt.savefig("3D id 13 (200-300k)")
+plt.show()
+
+# 2D histogram
 extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 fig,ax=plt.subplots(1,1)
+plt.imshow(hist.T, extent= extent, origin='lower')
+plt.colorbar()
+plt.title("speed vs accel for id 13 (200-300k) Data")
+plt.xlabel("speed (mps)")
+plt.ylabel("accel (mps2)")
+plt.savefig("2D id 13 (200-300k)")
+plt.show()
+
+##### Contour
 # cp = ax.contourf(xpos, ypos, hist)
 # plt.imshow(hist, extent=extent, origin='lower',
 #            cmap='RdGy')
@@ -79,10 +112,6 @@ fig,ax=plt.subplots(1,1)
 # plt.axis(aspect='image')
 # fig.colorbar(cp)
 # plt.show()
-plt.imshow(hist.T, extent= extent, origin='lower')
-plt.colorbar()
-plt.show()
-
 
 # import pickle
 # # with open('sinus.pickle', 'wb') as f: # should be 'wb' rather than 'w'
