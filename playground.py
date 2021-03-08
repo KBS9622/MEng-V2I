@@ -13,39 +13,45 @@ def show_figure(fig):
     new_manager.canvas.figure = fig
     fig.set_canvas(new_manager.canvas)
 
-file_path = 'Device13_formatted.csv'
-df = pd.read_csv(file_path)
-# remove observations when nothing happens as it can drown out the graph
-df = df[(df['speed_mps']!=0) & (df['accel_mps2']!=0)]
-# print(df)
-# df = df.loc[0:100000,:]
-# df = df.loc[100001:200000,:]
-df = df.loc[200001:300000,:]
-print(df['speed_mps'].min())
-print(df['speed_mps'].max())
-print(df['accel_mps2'].min())
-print(df['accel_mps2'].max())
-# x axis is the speed
-x = df['speed_mps'].to_numpy()
-# y axis is the acceleration
-y = df['accel_mps2'].to_numpy()
-
-
-# file_path = 'WGANGP_Epoch470.csv'
+# file_path = 'caltrans_processed_drive_cycles/data/1035198_1/2012-05-28.csv'
 # df = pd.read_csv(file_path)
-
 # # remove observations when nothing happens as it can drown out the graph
-# df = df[(df['Fake_speed']!=0) & (df['Fake_acc']!=0)]
-# # convert the units to metres per second from km/h
-# df = df/3.6
-# print(df['Fake_speed'].min())
-# print(df['Fake_speed'].max())
-# print(df['Fake_acc'].min())
-# print(df['Fake_acc'].max())
+# df = df[(df['speed_mph']!=0) & (df['accel_meters_ps']!=0)]
+# df = df.loc[:,['speed_mph','accel_meters_ps']]
+# print(df)
+# # # convert the units to metres per second from mph
+# df = df/2.237
+# # df = df.loc[0:100000,:]
+# # df = df.loc[100001:200000,:]
+# # df = df.loc[200001:300000,:]
+# print(df['speed_mph'].min())
+# print(df['speed_mph'].max())
+# print(df['accel_meters_ps'].min())
+# print(df['accel_meters_ps'].max())
 # # x axis is the speed
-# x = df['Fake_speed'].to_numpy()
+# x = df['speed_mph'].to_numpy()
 # # y axis is the acceleration
-# y = df['Fake_acc'].to_numpy()
+# y = df['accel_meters_ps'].to_numpy()
+
+# outlier_index = df.loc[df['accel_mps2']>5].index
+# print(outlier_index)
+
+
+file_path = 'caltrans_L2_Epoch1900.csv'
+df = pd.read_csv(file_path)
+
+# remove observations when nothing happens as it can drown out the graph
+df = df[(df['Fake_speed']!=0) & (df['Fake_acc']!=0)]
+# convert the units to metres per second from mph
+df = df/2.237
+print(df['Fake_speed'].min())
+print(df['Fake_speed'].max())
+print(df['Fake_acc'].min())
+print(df['Fake_acc'].max())
+# x axis is the speed
+x = df['Fake_speed'].to_numpy()
+# y axis is the acceleration
+y = df['Fake_acc'].to_numpy()
 
 # # remove observations when nothing happens as it can drown out the graph
 # df = df[(df['Real_speed']!=0) & (df['Real_acc']!=0)]
@@ -87,10 +93,10 @@ min_height = np.min(dz)
 rgba = [cmap((k-min_height)/max_height) for k in dz] 
 
 ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
-plt.title("speed vs accel for id 13 (200-300k) Data")
+plt.title("speed vs accel for generated caltrans 1035198_1 d28 Data")
 plt.xlabel("speed (mps)")
 plt.ylabel("accel (mps2)")
-plt.savefig("3D id 13 (200-300k)")
+plt.savefig("3D fake caltrans 1035198_1 d28")
 plt.show()
 
 # 2D histogram
@@ -98,10 +104,10 @@ extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 fig,ax=plt.subplots(1,1)
 plt.imshow(hist.T, extent= extent, origin='lower')
 plt.colorbar()
-plt.title("speed vs accel for id 13 (200-300k) Data")
+plt.title("speed vs accel for generated caltrans 1035198_1 d28 Data")
 plt.xlabel("speed (mps)")
 plt.ylabel("accel (mps2)")
-plt.savefig("2D id 13 (200-300k)")
+plt.savefig("2D fake caltrans 1035198_1 d28")
 plt.show()
 
 ##### Contour
@@ -121,63 +127,78 @@ plt.show()
 # plt.show(show_figure(fig_handle))
 
 
+# #script to process yun solutions data
+# import os
+# import pandas as pd
+# from datetime import datetime
 
-# fig = plt.figure()
-# ax = fig.add_subplot(111, projection='3d')
-# hist, xedges, yedges = np.histogram2d(x, y, bins=4)
-# print(hist)
-# print(xedges)
-# print(yedges)
+# class process():
 
-# # Construct arrays for the anchor positions of the 16 bars.
-# xpos, ypos = np.meshgrid(xedges[:-1], yedges[:-1], indexing="ij")
-# print(xpos)
-# print(ypos)
-# xpos = xpos.ravel()
-# ypos = ypos.ravel()
-# zpos = 0
+#     def __init__(self, filepath):
+#         self.filepath = filepath
+    
+#     def load_csv(self,filename):
+#         path = self.filepath + '/' + filename
+#         df = pd.read_csv(path)
+#         cols_wanted = ['timeStamp','speed']
+#         df = df.loc[:,cols_wanted]
 
-# # Construct arrays with the dimensions for the 16 bars.
-# dx = dy = 0.5 * np.ones_like(zpos)
-# dz = hist.ravel()
+#         return df
 
-# ax.bar3d(xpos, ypos, zpos, dx, dy, dz, zsort='average')
+# if __name__ == "__main__":
+#     filepath = '/Users/koeboonshyang/Desktop/OpenData'
+#     process_obj = process(filepath)
+#     filename_dec = 'Dec-17/12.0-1.csv'
+#     df_dec = process_obj.load_csv(filename_dec)
+#     filename_nov = 'Nov-17/12.0-0.csv'
+#     df_nov = process_obj.load_csv(filename_nov)
+#     filename_nov2 = 'Nov-17/12.0-1.csv'
+#     df_nov2 = process_obj.load_csv(filename_nov2)
+#     filename_oct = 'Oct-17/12.0.csv'
+#     df_oct = process_obj.load_csv(filename_oct)
+#     filename_sept = 'Sep-17/12.0.csv'
+#     df_sept = process_obj.load_csv(filename_sept)
+#     # filename_jan = 'Jan-18/12.0.csv'
+#     # df_jan = process_obj.load_csv(filename_jan)
 
-# plt.show()
+#     df = [df_sept, df_oct, df_nov, df_nov2, df_dec]#, df_jan]
+#     df = pd.concat(df, ignore_index = True)
+    
+#     # @Heejoon, u can start here since u have already combined the csv
+#     #removes duplicate rows based on 'timeStamp'
+#     df = df.drop_duplicates(subset = 'timeStamp')
+#     print(df)
+#     df.reset_index(inplace = True)
+#     print(df)
+#     # df = df[df.index.duplicated()]
 
+#     #identifies the index of the outliers
+#     outlier_index = df.loc[df['speed']>200,:].index
+#     #loops thrrough the list of outlier index and changes the df so that any outlier is replaced by the previous observation
+#     for x in outlier_index:
+#         df.loc[x,'speed'] = df.loc[x-1,'speed'] 
+        
+    
+#     df['timestamp'] = pd.to_datetime(df['timeStamp'])
 
+#     # makes new column called timestep to help calculate acceleration
+#     df['timestep'] = (df['timestamp'].shift(-1)-df['timestamp']).astype('timedelta64[s]')
+#     df['acceleration'] = (df['speed'].shift(-1)-df['speed'])/df['timestep'] #the unit of acceleration is km/h/s, so be cautious when converting
 
+#     #makes the first row observation of acceleration to 0, as there is no previous speed value to calculate acceleration
+#     df.loc[-1,'acceleration'] = 0
 
+#     # the speed column is in km/h whereas acceleration column is in km/h/s, need to convert both to m/s and m/s^2 respectively
+#     kmph_to_mps = 3.6
+#     df['speed_mps'] = df['speed']/kmph_to_mps
+#     df['accel_mps2'] = df['acceleration']/kmph_to_mps
 
+#     df = df.set_index('timestamp')
+#     print(df)
+#     cols_to_drop = ['timeStamp', 'timestep', 'index', 'speed', 'acceleration']
+#     df = df.drop(columns=cols_to_drop)
+    
+#     print(df)
 
+# df.to_csv(r'/Users/koeboonshyang/Desktop/Device12_formatted.csv')
 
-
-
-# import numpy as np
-# import numpy.random
-# import matplotlib.pyplot as plt
-
-# # To generate some test data
-# x = np.random.randn(500)
-# y = np.random.randn(500)
-
-# XY = np.stack((x,y),axis=-1)
-
-# def selection(XY, limitXY=[[-2,+2],[-2,+2]]):
-#         XY_select = []
-#         for elt in XY:
-#             if elt[0] > limitXY[0][0] and elt[0] < limitXY[0][1] and elt[1] > limitXY[1][0] and elt[1] < limitXY[1][1]:
-#                 XY_select.append(elt)
-
-#         return np.array(XY_select)
-
-# XY_select = selection(XY, limitXY=[[-2,+2],[-2,+2]])
-
-# heatmap, xedges, yedges = np.histogram2d(XY_select[:,0], XY_select[:,1], bins = 7, range = [[-2,2],[-2,2]])
-# extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-
-
-# plt.figure("Histogram")
-# #plt.clf()
-# plt.imshow(heatmap.T, extent=extent, origin='lower')
-# plt.show()
