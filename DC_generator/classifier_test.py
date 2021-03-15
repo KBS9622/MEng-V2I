@@ -46,8 +46,8 @@ data = load_csv_data(file_name, subdir)
 data = data.loc[:, ['timestamp','speed_mps','accel_mps2']]
 data['timestamp'] = pd.to_datetime(data['timestamp'], dayfirst=True)
 # set the start and end of the slice of data
-start_time = pd.to_datetime('01-09-2017 00:00:00', dayfirst=True)
-end_time = pd.to_datetime('01-10-2017 00:00:00', dayfirst=True)
+start_time = pd.to_datetime('25-09-2017 00:00:00', dayfirst=True)
+end_time = pd.to_datetime('26-09-2017 00:00:00', dayfirst=True)
 data = data[(data['timestamp']>start_time)&(data['timestamp']<end_time)]
 
 print(data)
@@ -154,8 +154,8 @@ for idx in all_cruise_time:
     cruise_start = min(idx)
     cruise_end = max(idx)
     # get the index for the start and end of the cruising phase
-    cruise_start_idx = data[data['timestamp']==cruise_start].index[0]
-    cruise_end_idx = data[data['timestamp']==cruise_end].index[0]
+    cruise_start_idx = data[data['timestamp']==cruise_start].index
+    cruise_end_idx = data[data['timestamp']==cruise_end].index
     # note it in the dataframe 
     data.loc[cruise_start_idx,'points'] = 2
     data.loc[cruise_end_idx,'points'] = 3
