@@ -143,7 +143,7 @@ for i in range(len(pulse_start)):
         ax.plot(x,y)
         cid = fig.canvas.mpl_connect('button_press_event', onclick)
         plt.show()
-        # clear the flag
+    # clear the flag
     flag = 0
 
 print(all_cruise_time)
