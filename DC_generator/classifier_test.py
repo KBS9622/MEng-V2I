@@ -26,23 +26,39 @@ def load_csv_data(file_name, subdir=''):
 
     return df
 
+# # # loads the csv file
+# subdir = 'caltrans_processed_drive_cycles/data/1035198_1'
+# file_name = '2012-05-22.csv'
+# data = load_csv_data(file_name, subdir)
+
+# # get only timestamp and speed_mph for the slice that you want
+# data = data.loc[:, ['timestamp','speed_mph']]
+# data['timestamp'] = pd.to_datetime(data['timestamp'], dayfirst=True)
+# print(data)
+
+
 # # loads the csv file
-subdir = 'caltrans_processed_drive_cycles/data/1035198_1'
-file_name = '2012-05-22.csv'
+subdir = ''
+file_name = 'Device12_formatted.csv'
 data = load_csv_data(file_name, subdir)
 
-# get only timestamp and speed_mph for the slice that you want
-data = data.loc[:, ['timestamp','speed_mph']]
+# get only timestamp and speed_mps for the slice that you want
+data = data.loc[:, ['timestamp','speed_mps','accel_mps2']]
 data['timestamp'] = pd.to_datetime(data['timestamp'], dayfirst=True)
+# set the start and end of the slice of data
+start_time = pd.to_datetime('01-09-2017 00:00:00', dayfirst=True)
+end_time = pd.to_datetime('01-10-2017 00:00:00', dayfirst=True)
+data = data[(data['timestamp']>start_time)&(data['timestamp']<end_time)]
+
 print(data)
 
 
 
 
 # minimum gap between observed '0' to determine as a pulse (in seconds)
-min_gap = 2
+min_gap = 30
 # get only the subset of the data where speed = 0
-zero_data = data[data['speed_mph']==0]
+zero_data = data[data['speed_mps']==0]
 print(zero_data)
 # reset the index of the df
 zero_data.reset_index(inplace=True)
@@ -111,12 +127,14 @@ def onclick(event):
 
     return cruise_time
 
+print(len(pulse_start))
+print(len(pulse_end))
 
 # loop over the number of pulses in the df
 for i in range(len(pulse_start)):
     # get the slice for the driving pulse
     x = data.loc[pulse_start[i]:pulse_end[i],'timestamp']
-    y = data.loc[pulse_start[i]:pulse_end[i],'speed_mph']
+    y = data.loc[pulse_start[i]:pulse_end[i],'speed_mps']
     
     while flag==0:
         # plot the figure
@@ -124,9 +142,7 @@ for i in range(len(pulse_start)):
         ax = fig.add_subplot(111)
         ax.plot(x,y)
         cid = fig.canvas.mpl_connect('button_press_event', onclick)
-        print(flag)
         plt.show()
-        print(flag)
         # clear the flag
     flag = 0
 
@@ -137,9 +153,11 @@ print(all_cruise_time)
 for idx in all_cruise_time:
     cruise_start = min(idx)
     cruise_end = max(idx)
-    cruise_start_idx = data[data['timestamp']==cruise_start].index[-1]
+    # get the index for the start and end of the cruising phase
+    cruise_start_idx = data[data['timestamp']==cruise_start].index[0]
     cruise_end_idx = data[data['timestamp']==cruise_end].index[0]
+    # note it in the dataframe 
     data.loc[cruise_start_idx,'points'] = 2
     data.loc[cruise_end_idx,'points'] = 3
 
-data.to_csv(r'/Users/koeboonshyang/Desktop/test_classifed.csv', index = False)
+data.to_csv(r'/Users/koeboonshyang/Desktop/device12_sep_classifed.csv', index = False)
