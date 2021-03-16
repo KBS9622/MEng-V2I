@@ -46,8 +46,8 @@ data = load_csv_data(file_name, subdir)
 data = data.loc[:, ['timestamp','speed_mps','accel_mps2']]
 data['timestamp'] = pd.to_datetime(data['timestamp'], dayfirst=True)
 # set the start and end of the slice of data
-start_time = pd.to_datetime('25-09-2017 00:00:00', dayfirst=True)
-end_time = pd.to_datetime('26-09-2017 00:00:00', dayfirst=True)
+start_time = pd.to_datetime('09-10-2017 00:00:00', dayfirst=True)
+end_time = pd.to_datetime('11-10-2017 00:00:00', dayfirst=True)
 data = data[(data['timestamp']>start_time)&(data['timestamp']<end_time)]
 
 print(data)
@@ -72,8 +72,8 @@ pulse_end = []
 
 for i in range(len(zero_data)-1):
     index_diff = zero_data.loc[i+1,'index'] - zero_data.loc[i,'index']
-    # if index_diff is more than 1, it means that there is driving in between the two index, and we should record it down
-    if index_diff > 1:
+    # if index_diff is more than min_gap, it means that there is driving in between the two index, and we should record it down
+    if index_diff > min_gap:
         # calculate the time difference between observed '0's
         time_diff = (zero_data.loc[i+1,'timestamp'] - zero_data.loc[i,'timestamp']).seconds
         # print(time_diff)
@@ -138,7 +138,7 @@ for i in range(len(pulse_start)):
     
     while flag==0:
         # plot the figure
-        fig = plt.figure()
+        fig = plt.figure(figsize=(15,6))
         ax = fig.add_subplot(111)
         ax.plot(x,y)
         cid = fig.canvas.mpl_connect('button_press_event', onclick)
@@ -160,4 +160,4 @@ for idx in all_cruise_time:
     data.loc[cruise_start_idx,'points'] = 2
     data.loc[cruise_end_idx,'points'] = 3
 
-data.to_csv(r'/Users/koeboonshyang/Desktop/device12_sep_classifed.csv', index = False)
+data.to_csv(r'/Users/koeboonshyang/Desktop/device12_oct_classifed.csv', index = False)
