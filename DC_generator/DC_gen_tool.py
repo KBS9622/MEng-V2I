@@ -806,7 +806,7 @@ class Velocity_Noise(object):
 if __name__ == '__main__':
     # loads the csv file and extract the attribute informations
     file_name = 'device12_oct_classified.csv'
-    subdir = ''
+    subdir = 'DC_generator'
     extract_obj = Extract_Hist(file_name, subdir)
     # get the slice of ONLY cruising period
     cruising_data = extract_obj.cruise_with_vn[270]
