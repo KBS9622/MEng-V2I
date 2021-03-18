@@ -10,6 +10,7 @@ from lmfit import minimize, Minimizer, Parameters, Parameter, report_fit
 import matplotlib.pyplot as plt
 import lmfit
 import random
+import sys
 np.set_printoptions(threshold=sys.maxsize)
 
 def load_csv_data(file_name, subdir=''):
@@ -192,7 +193,7 @@ class DP(object):
         self.decel_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.decel_obj)
         self.random_select_params()
         self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value, self.avg_cruising_speed_value)
-        print(self.params)
+        # print(self.params)
 
 
     def create_inv_cdf_objects(self, attribute_obj, num_of_gauss = 2):
@@ -219,7 +220,7 @@ class DP(object):
         random_numbers = [round(element, 2) for element in list1]
         self.accel_value = self.accel_inv_cdf_obj.get_value(random_numbers.pop())[0]
         # self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())[0]
-        self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(0.98)[0]
+        self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())[0]
         self.avg_cruising_speed_value = self.avg_cruising_speed_inv_cdf_obj.get_value(random_numbers.pop())[0]
         self.decel_value = self.decel_inv_cdf_obj.get_value(random_numbers.pop())[0]
 
@@ -806,7 +807,7 @@ class Velocity_Noise(object):
 if __name__ == '__main__':
     # loads the csv file and extract the attribute informations
     file_name = 'device12_oct_classified.csv'
-    subdir = 'DC_generator'
+    subdir = ''
     extract_obj = Extract_Hist(file_name, subdir)
     # get the slice of ONLY cruising period
     cruising_data = extract_obj.cruise_with_vn[270]
@@ -831,6 +832,6 @@ if __name__ == '__main__':
     hi = vn_obj.fit_all()
     yy = vn_obj.final_curve()
     
-    pulse_duration=1000
+    pulse_duration=10000
     driving_pulse = DP(pulse_duration, extract_obj)
     driving_pulse.generate_drive_cycle(vn_obj)
