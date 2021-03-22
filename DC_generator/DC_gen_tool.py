@@ -164,9 +164,11 @@ def HF_Noise(component = 1):
 
     return LMparams
 
+
 class DP(object):
     """ Module 3: Drive Pulse
     """
+
     # def __init__(self, pulse_duration):
     #     """ Constructor takes in pulse duration and creates instances of inverse cdfs for each of the intersted parameters needed to
     #         generate the drive pulse. Creates self.parameter dictionary containing all relevant parameters.
@@ -181,46 +183,43 @@ class DP(object):
     #     self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value, self.avg_cruising_speed_value)
     #     print(self.params)
 
-    def __init__(self, pulse_duration, extract_obj):
-        """ Constructor takes in pulse duration and extraction obj, then creates instances of inverse cdfs for each of the interested 
+    def __init__(self, pulse_duration, extract_obj, seed=10):
+        """ Constructor takes in pulse duration and extraction obj, then creates instances of inverse cdfs for each of the interested
         parameters needed to generate the drive pulse. Creates self.parameter dictionary containing all relevant parameters.
         """
-        self.pulse_duration = pulse_duration 
-        self.total_t = np.linspace(0, 1000*self.pulse_duration, (1000*self.pulse_duration)+1)
+        np.random.seed(seed)
+        self.pulse_duration = pulse_duration
+        self.total_t = np.linspace(0, 1000 * self.pulse_duration, (1000 * self.pulse_duration) + 1)
         self.accel_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.accel_obj)
         self.cruising_duration_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.cd_obj)
         self.avg_cruising_speed_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.avg_cs_obj)
         self.decel_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.decel_obj)
-        self.random_select_params()
-        self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value, self.avg_cruising_speed_value)
-        # print(self.params)
 
-
-    def create_inv_cdf_objects(self, attribute_obj, num_of_gauss = 2):
+    def create_inv_cdf_objects(self, attribute_obj, num_of_gauss=2):
         """
         Takes in one of parameter's classes needed for driving pulse and instantiates object for the inverse_cdf
         """
-        #load initial gaussian parameters
+        # load initial gaussian parameters
         param_obj = Gaussian_param()
-        #create a probability function object for attribute with its attribute histogram data
-        attribute_prob_obj = Probability_Functions(attribute_obj.bins, attribute_obj.data_points,num_of_gauss)
-        #fit the histogram
+        # create a probability function object for attribute with its attribute histogram data
+        attribute_prob_obj = Probability_Functions(attribute_obj.bins, attribute_obj.data_points, num_of_gauss)
+        # fit the histogram
         fitted_obj = attribute_prob_obj.NLLSR(param_obj)
         # create inverse cdf object
         inv_cdf_obj = inv_cdf(attribute_prob_obj)
 
         return inv_cdf_obj
 
-    def random_select_params(self, seed = 10):
+    def random_select_params(self):
         """
         Randomly generates numbers from 0 to 1 to randomly select values for parameters using their inverse cdf
         """
-        np.random.seed(seed)
         list1 = np.random.rand(4).tolist()
         random_numbers = [round(element, 2) for element in list1]
+        print(random_numbers)
         self.accel_value = self.accel_inv_cdf_obj.get_value(random_numbers.pop())[0]
-        # self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())[0]
         self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())[0]
+        # self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(0.98)[0]
         self.avg_cruising_speed_value = self.avg_cruising_speed_inv_cdf_obj.get_value(random_numbers.pop())[0]
         self.decel_value = self.decel_inv_cdf_obj.get_value(random_numbers.pop())[0]
 
@@ -228,57 +227,86 @@ class DP(object):
         """
         time_array: array of timestamps to compute for corresponding velocity noise using fitted model
         velocity_noise_obj: VN object containing fitted model and respective parameters for 3 freq components
-        
-        return:: cruising_with_noise set of speed values containing average cruising speed superimposed on velocity noise 
-        """
-        #resets time to match the specified duration of the driving pulse
-        velocity_noise_obj.set_t(time_array)
-        #returns velocity noise speed values (y axis)
-        velocity_noise = velocity_noise_obj.final_curve()
-        #adds velocity noise speed values (y axis) to static cruising speed
-        cruising_with_noise =  velocity_noise + self.params["cruising speed"]
 
-        # plt.plot(time_array, cruising_with_noise)
-        # plt.show()
+        return:: cruising_with_noise set of speed values containing average cruising speed superimposed on velocity noise
+        """
+        # resets time to match the specified duration of the driving pulse
+        velocity_noise_obj.set_t(time_array)
+        # returns velocity noise speed values (y axis)
+        velocity_noise = velocity_noise_obj.final_curve()
+        # scale the velocity noise so that velocity during crusing does not go negative
+        scaled_velocity_noise = self.scale_velocity_noise(velocity_noise)
+        # adds velocity noise speed values (y axis) to static cruising speed
+        cruising_with_noise = scaled_velocity_noise + self.params["cruising speed"]
+
+        plt.plot(time_array, cruising_with_noise)
+        plt.show()
         return cruising_with_noise
+
+    def scale_velocity_noise(self, velocity_noise):
+        # get the minimum velocity of the velocity noise component only (centered around '0')
+        min_vn = min(velocity_noise)
+        # get the minimum velocity of velocity noise with cruising speed
+        min_cruise_with_vn = min_vn + self.params["cruising speed"]
+        # only scale the velocity noise if it results in a negative cruising with vn speed value
+        if min_cruise_with_vn <= 0:
+            # find the scale ratio that causes the lowest of the cruise with vn speed value to be 0
+            scale = self.params["cruising speed"] / (-min_vn)
+            print(scale)
+            # round the value down
+            scale = int(math.floor(100 * scale))
+            print(scale)
+            # scale the vn
+            scaled_vn = (scale / 100) * velocity_noise
+            return scaled_vn
+        return velocity_noise
 
     def parameters_for_drive_cycle(self, acceleration, decceleration, cruising_duration, average_cruising_speed):
         """
         accepts as parameters the 4 randomly selected values from the inverse cdfs, computes other parameters and returns
         this as a dictionary
         """
-        #computes acceleration time by using average cruising speed as initial speed of cruising duration
-        acceleration_time= 1000 * average_cruising_speed / acceleration
-        #computes decceleration time by using average cruising speed as final speed of cruising duration
+        # computes acceleration time by using average cruising speed as initial speed of cruising duration
+        acceleration_time = 1000 * average_cruising_speed / acceleration
+        # computes decceleration time by using average cruising speed as final speed of cruising duration
         decceleration_time = 1000 * average_cruising_speed / decceleration
-        #computes idle time by subtracting all other durations from total pulse duration
-        idle_time = self.total_t - acceleration_time - decceleration_time - (1000 * cruising_duration)
-        
-        #constructs parameters dictionary containing everything needed to generate driving pulse
+        # computes idle time by subtracting all other durations from total pulse duration
+        idle_time = (1000 * self.pulse_duration) - acceleration_time - decceleration_time - (1000 * cruising_duration)
+
+        # constructs parameters dictionary containing everything needed to generate driving pulse
         parameters = {"acceleration": acceleration,
-                      "decceleration" : decceleration,
+                      "decceleration": decceleration,
                       "acceleration duration": round(acceleration_time),
                       "decceleration duration": round(decceleration_time),
-                      "cruising duration" : round(1000 * cruising_duration),
-                      "cruising speed" : average_cruising_speed,
-                      "idle duration" : idle_time,
-                      "total duration": self.total_t
+                      "cruising duration": round(1000 * cruising_duration),
+                      "cruising speed": average_cruising_speed,
+                      "idle duration": idle_time,
+                      "total duration": 1000 * self.pulse_duration
                       }
         return parameters
 
     def generate_drive_cycle(self, velocity_noise_obj):
         """ Function to be called from outside the class that outputs plot of generated driving pulse
         """
+        self.random_select_params()
+        self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value,
+                                                      self.avg_cruising_speed_value)
+        print(self.params)
         # Call cruising_with_noise method to return corresponding values (y axis) for cruising
         # Inputs the whole pulse duration as cruise duration therefore extra values are present
         # print(self.total_t)
         # print(self.params["acceleration duration"])
         # print(np.where(self.total_t[:]==self.params["acceleration duration"]))
         # print(np.where(self.total_t[:]==self.params["acceleration duration"])[0][0])
-        # print(self.total_t[np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]:])
-        speed_while_cruising_extra_values = self.crusing_with_noise(self.total_t[np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]:]/1000, velocity_noise_obj)
+        # print(self.total_t[np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]:]/1000)
+        speed_while_cruising_extra_values = self.crusing_with_noise(self.total_t[np.where(
+            self.total_t[:] == self.params["acceleration duration"])[0][0]:np.where(
+            self.total_t[:] == (self.params["acceleration duration"] + self.params["cruising duration"]))[0][0]] / 1000,
+                                                                    velocity_noise_obj)
         # computes initial cruising speed with velocity noise
         initial_cruising_speed = speed_while_cruising_extra_values[0]
+        # print('initial_cruising_speed:{}'.format(initial_cruising_speed))
+        # print(self.params["acceleration"])
         # computes actual acceleartion duration using the caluclated initial speed
         # no longer is using the estimate of initial= avergae cruising speed as in the parameters_for_drive_cycle method
         self.params["acceleration duration"] = round(1000 * initial_cruising_speed / self.params["acceleration"])
@@ -286,46 +314,55 @@ class DP(object):
         # print(self.total_t)
         # print(1000*self.params["acceleration duration"])
         # print(np.where(self.total_t[:]==self.params["acceleration duration"]))
-        
+
         # Retrieves x axis (time steps) and y axis (speed) values during acceleration period
-        accel_time_values = self.total_t[:np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]]
+        accel_time_values = self.total_t[:np.where(self.total_t[:] == self.params["acceleration duration"])[0][0]]
         speed_during_acceleration = self.params["acceleration"] * accel_time_values / 1000
         current_time = self.params["acceleration duration"]
-        
+
         # Retrieves x axis (time steps) and y axis (speed) values during cruising period
-        cruising_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==current_time+self.params["cruising duration"])[0][0]]
-        speed_during_cruising = speed_while_cruising_extra_values[:np.where(self.total_t[:]==self.params["cruising duration"])[0][0]]
+        cruising_time_values = self.total_t[np.where(self.total_t[:] == current_time)[0][0]:np.where(
+            self.total_t[:] == current_time + self.params["cruising duration"])[0][0]]
+        speed_during_cruising = speed_while_cruising_extra_values[
+                                :np.where(self.total_t[:] == self.params["cruising duration"])[0][0]]
         current_time += self.params["cruising duration"]
-        
+
         # Retrieves x axis (time steps) and y axis (speed) values during decceleration period
         final_cruising_speed = speed_during_cruising[-1]
         # print(final_cruising_speed)
         # print(self.params["decceleration"])
         self.params["decceleration duration"] = round(1000 * final_cruising_speed / self.params["decceleration"])
         # print(self.params["decceleration duration"])
-        end_time = round(current_time+self.params["decceleration duration"])
-        deccel_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==end_time)[0][0]]
-        speed_during_decceleration = final_cruising_speed - (self.params["decceleration"]/1000 * np.linspace(1, self.params["decceleration duration"], int(self.params["decceleration duration"])))
-        current_time += self.params["decceleration duration"] 
+        end_time = round(current_time + self.params["decceleration duration"])
+        deccel_time_values = self.total_t[
+                             np.where(self.total_t[:] == current_time)[0][0]:np.where(self.total_t[:] == end_time)[0][
+                                 0]]
+        speed_during_decceleration = final_cruising_speed - (
+                    self.params["decceleration"] / 1000 * np.linspace(1, self.params["decceleration duration"],
+                                                                      int(self.params["decceleration duration"])))
+        current_time += self.params["decceleration duration"]
         # current_time = round(current_time,3)
-        
+
         # Retrieves x axis (time steps) and y axis (speed= 0) values during idle_time period
-        idle_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==self.pulse_duration)[0][0]]                                            
+        idle_time_values = self.total_t[np.where(self.total_t[:] == current_time)[0][0]:
+                                        np.where(self.total_t[:] == self.pulse_duration)[0][0]]
         idle_time = 0 * idle_time_values
-        
+
         # Plot all 4 periods on same plot to visuale driving pulse
-        # plt.plot(accel_time_values, speed_during_acceleration, 'r')  
-        # plt.plot(cruising_time_values, speed_during_cruising, 'b') 
-        # plt.plot(deccel_time_values, speed_during_decceleration, 'g') 
-        # plt.plot(idle_time_values, idle_time, 'r')
-        # plt.show()
+        plt.plot(accel_time_values, speed_during_acceleration, 'r')
+        plt.plot(cruising_time_values, speed_during_cruising, 'b')
+        plt.plot(deccel_time_values, speed_during_decceleration, 'g')
+        plt.plot(idle_time_values, idle_time, 'r')
+        plt.show()
 
-        time_steps = np.concatenate((accel_time_values,cruising_time_values,deccel_time_values,idle_time_values))
-        speed = np.concatenate((speed_during_acceleration,speed_during_cruising,speed_during_decceleration,idle_time))
+        time_steps = np.concatenate((accel_time_values, cruising_time_values, deccel_time_values, idle_time_values))
+        speed = np.concatenate(
+            (speed_during_acceleration, speed_during_cruising, speed_during_decceleration, idle_time))
 
-        df = pd.DataFrame({'time_steps':time_steps, 'speed':speed}) 
+        df = pd.DataFrame({'time_steps': time_steps, 'speed': speed})
 
-        df.to_csv('generated_data.csv', index = False, header=True)
+        df.to_csv('generated_data.csv', index=False, header=True)
+
 
 class Attribute(object):
     """ Generates a histogram according to the input array
@@ -806,7 +843,7 @@ class Velocity_Noise(object):
 
 if __name__ == '__main__':
     # loads the csv file and extract the attribute informations
-    file_name = 'device12_oct_classified.csv'
+    file_name = 'october_21_to_31.csv'
     subdir = ''
     extract_obj = Extract_Hist(file_name, subdir)
     # get the slice of ONLY cruising period
@@ -834,4 +871,6 @@ if __name__ == '__main__':
     
     pulse_duration=10000
     driving_pulse = DP(pulse_duration, extract_obj)
+    driving_pulse.generate_drive_cycle(vn_obj)
+    driving_pulse.generate_drive_cycle(vn_obj)
     driving_pulse.generate_drive_cycle(vn_obj)
