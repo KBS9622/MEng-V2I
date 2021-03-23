@@ -285,7 +285,7 @@ class DP(object):
                       }
         return parameters
 
-    def generate_drive_cycle(self, velocity_noise_obj):
+    def generate_driving_pulse(self, velocity_noise_obj):
         """ Function to be called from outside the class that outputs plot of generated driving pulse
         """
         self.random_select_params()
@@ -871,6 +871,6 @@ if __name__ == '__main__':
     
     pulse_duration=10000
     driving_pulse = DP(pulse_duration, extract_obj)
-    driving_pulse.generate_drive_cycle(vn_obj)
-    driving_pulse.generate_drive_cycle(vn_obj)
-    driving_pulse.generate_drive_cycle(vn_obj)
+    driving_pulse.generate_driving_pulse(vn_obj)
+    driving_pulse.generate_driving_pulse(vn_obj)
+    driving_pulse.generate_driving_pulse(vn_obj)
