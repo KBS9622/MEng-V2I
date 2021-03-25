@@ -10,8 +10,8 @@ from lmfit import minimize, Minimizer, Parameters, Parameter, report_fit
 import matplotlib.pyplot as plt
 import lmfit
 import random
-import sys
-np.set_printoptions(threshold=sys.maxsize)
+from scipy.interpolate import interp1d
+# np.set_printoptions(threshold=sys.maxsize)
 
 def load_csv_data(file_name, subdir=''):
     """
@@ -33,6 +33,63 @@ def load_csv_data(file_name, subdir=''):
     df = pd.read_csv(file_path)
 
     return df
+
+def LF_Noise(component = 1):
+    """ Inital parameters and bounds for each paramter according to LF (0-0.01Hz)in the paper
+    """
+    LMparams = Parameters()
+
+    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
+
+    LMparams.add('A1_FS', value = 10.)
+    LMparams.add('A2_FS', value = 10.)
+    LMparams.add('A3_FS', value = 10.)
+    LMparams.add('w1_FS', value = 0, min = 0, max = 0.01*2*math.pi)
+    LMparams.add('w2_FS', value = 0.005*2*math.pi, min = 0, max = 0.01*2*math.pi)
+    LMparams.add('w3_FS', value = 0.01*2*math.pi, min = 0, max = 0.01*2*math.pi)
+    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
+
+    return LMparams
+
+def MF_Noise(component = 1):
+    """ Inital parameters and bounds for each paramter according to MF (0.01-0.25Hz) in the paper
+    """
+    LMparams = Parameters()
+
+    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
+
+    LMparams.add('A1_FS', value = 10.)
+    LMparams.add('A2_FS', value = 10.)
+    LMparams.add('A3_FS', value = 10.)
+    LMparams.add('w1_FS', value = 0.02*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
+    LMparams.add('w2_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
+    LMparams.add('w3_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
+    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
+
+    return LMparams
+
+def HF_Noise(component = 1):
+    """ Inital parameters and bounds for each paramter according to HF (0.25-0.5Hz) in the paper
+    """
+    LMparams = Parameters()
+
+    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
+
+    LMparams.add('A1_FS', value = 1.)
+    LMparams.add('A2_FS', value = 1.)
+    LMparams.add('A3_FS', value = 1.)
+    LMparams.add('w1_FS', value = 0.25*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
+    LMparams.add('w2_FS', value = 0.375*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
+    LMparams.add('w3_FS', value = 0.5*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
+    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
+    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
+
+    return LMparams
 
 def Gaussian_param():
     """ Inital parameters for each Gaussian characteristic paramter 
@@ -61,149 +118,32 @@ def Gaussian_idle_param():
     LMparams.add('meu_2', value = 5000., min = 0)
 
     return LMparams
-
-def LF_Noise(component = 1):
-    """ Inital parameters and bounds for each paramter according to LF (0-0.01Hz)in the paper
-    """
-    LMparams = Parameters()
-
-    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
-
-    LMparams.add('A1_FS', value = 10.)
-    LMparams.add('A2_FS', value = 10.)
-    LMparams.add('A3_FS', value = 10.)
-    LMparams.add('w1_FS', value = 0, min = 0, max = 0.01*2*math.pi)
-    LMparams.add('w2_FS', value = 0.005*2*math.pi, min = 0, max = 0.01*2*math.pi)
-    LMparams.add('w3_FS', value = 0.01*2*math.pi, min = 0, max = 0.01*2*math.pi)
-    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
-
-    # The code below is to load the initial paramters if we are running the NLLSR on one component at a time
-
-    # if component == 1:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0, min = 0, max = 0.01*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 2:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0.005*2*math.pi, min = 0, max = 0.01*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 3:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0.01*2*math.pi, min = 0, max = 0.01*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-
-    return LMparams
-
-def MF_Noise(component = 1):
-    """ Inital parameters and bounds for each paramter according to MF (0.01-0.25Hz) in the paper
-    """
-    LMparams = Parameters()
-
-    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
-
-    LMparams.add('A1_FS', value = 10.)
-    LMparams.add('A2_FS', value = 10.)
-    LMparams.add('A3_FS', value = 10.)
-    LMparams.add('w1_FS', value = 0.02*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    LMparams.add('w2_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    LMparams.add('w3_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
-
-    # The code below is to load the initial paramters if we are running the NLLSR on one component at a time
-
-    # if component == 1:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0.02*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 2:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 3:
-    #     LMparams.add('A_FS', value = 10.)
-    #     LMparams.add('w_FS', value = 0.03*2*math.pi, min = 0.01*2*math.pi, max = 0.25*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-
-    return LMparams
-
-def HF_Noise(component = 1):
-    """ Inital parameters and bounds for each paramter according to HF (0.25-0.5Hz) in the paper
-    """
-    LMparams = Parameters()
-
-    # The code below is to load the initial paramters if we are running the NLLSR on all 3 components at once
-
-    LMparams.add('A1_FS', value = 1.)
-    LMparams.add('A2_FS', value = 1.)
-    LMparams.add('A3_FS', value = 1.)
-    LMparams.add('w1_FS', value = 0.25*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    LMparams.add('w2_FS', value = 0.375*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    LMparams.add('w3_FS', value = 0.5*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    LMparams.add('phi1_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi2_FS', value = 0, min = -math.pi, max = math.pi)
-    LMparams.add('phi3_FS', value = 0, min = -math.pi, max = math.pi)
-
-    # The code below is to load the initial paramters if we are running the NLLSR on one component at a time
-
-    # if component == 1:
-    #     LMparams.add('A_FS', value = 1.)
-    #     LMparams.add('w_FS', value = 0.25*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 2:
-    #     LMparams.add('A_FS', value = 1.)
-    #     LMparams.add('w_FS', value = 0.375*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-    # elif component == 3:
-    #     LMparams.add('A_FS', value = 1.)
-    #     LMparams.add('w_FS', value = 0.5*2*math.pi, min = 0.25*2*math.pi, max = 0.5*2*math.pi)
-    #     LMparams.add('phi_FS', value = 0, min = -math.pi, max = math.pi)
-
-    return LMparams
-
-
+    
 class DP(object):
     """ Module 3: Drive Pulse
     """
 
-    # def __init__(self, pulse_duration):
-    #     """ Constructor takes in pulse duration and creates instances of inverse cdfs for each of the intersted parameters needed to
-    #         generate the drive pulse. Creates self.parameter dictionary containing all relevant parameters.
-    #     """
-    #     self.pulse_duration = pulse_duration 
-    #     self.total_t = np.linspace(0, 1000*self.pulse_duration, (1000*self.pulse_duration)+1)
-    #     self.accel_inv_cdf_obj = self.create_inv_cdf_objects(Acceleration())
-    #     self.cruising_duration_inv_cdf_obj = self.create_inv_cdf_objects(Cruising_Duration())
-    #     self.avg_cruising_speed_inv_cdf_obj = self.create_inv_cdf_objects(Average_Crusing_Speed())
-    #     self.decel_inv_cdf_obj = self.create_inv_cdf_objects(Deceleration())
-    #     self.random_select_params()
-    #     self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value, self.avg_cruising_speed_value)
-    #     print(self.params)
-
-    def __init__(self, pulse_duration, extract_obj, seed=10):
-        """ Constructor takes in pulse duration and extraction obj, then creates instances of inverse cdfs for each of the interested
+    def __init__(self, pulse_duration, extract_obj, seed = 10):
+        """ Constructor takes in pulse duration and extraction obj, then creates instances of inverse cdfs for each of the interested 
         parameters needed to generate the drive pulse. Creates self.parameter dictionary containing all relevant parameters.
         """
         np.random.seed(seed)
-        self.pulse_duration = pulse_duration
-        self.total_t = np.linspace(0, 1000 * self.pulse_duration, (1000 * self.pulse_duration) + 1)
+        self.pulse_duration = pulse_duration 
+        self.total_t = np.linspace(0, 1000*self.pulse_duration, (1000*self.pulse_duration)+1)
         self.accel_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.accel_obj)
         self.cruising_duration_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.cd_obj)
         self.avg_cruising_speed_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.avg_cs_obj)
         self.decel_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.decel_obj)
+        self.idle_inv_cdf_obj = self.create_inv_cdf_objects(extract_obj.idle_obj, param_obj = Gaussian_idle_param())
+        
 
-    def create_inv_cdf_objects(self, attribute_obj, num_of_gauss=2):
+    def create_inv_cdf_objects(self, attribute_obj, param_obj = Gaussian_param(), num_of_gauss = 2):
         """
         Takes in one of parameter's classes needed for driving pulse and instantiates object for the inverse_cdf
         """
-        # load initial gaussian parameters
-        param_obj = Gaussian_param()
-        # create a probability function object for attribute with its attribute histogram data
-        attribute_prob_obj = Probability_Functions(attribute_obj.bins, attribute_obj.data_points, num_of_gauss)
-        # fit the histogram
+        #create a probability function object for attribute with its attribute histogram data
+        attribute_prob_obj = Probability_Functions(attribute_obj.bins, attribute_obj.data_points,num_of_gauss)
+        #fit the histogram
         fitted_obj = attribute_prob_obj.NLLSR(param_obj)
         # create inverse cdf object
         inv_cdf_obj = inv_cdf(attribute_prob_obj)
@@ -214,33 +154,37 @@ class DP(object):
         """
         Randomly generates numbers from 0 to 1 to randomly select values for parameters using their inverse cdf
         """
-        list1 = np.random.rand(4).tolist()
-        random_numbers = [round(element, 2) for element in list1]
+        list1 = np.random.rand(5).tolist()
+        random_numbers = [int(round(1000*element)) for element in list1]
         print(random_numbers)
-        self.accel_value = self.accel_inv_cdf_obj.get_value(random_numbers.pop())[0]
-        self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())[0]
-        # self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(0.98)[0]
-        self.avg_cruising_speed_value = self.avg_cruising_speed_inv_cdf_obj.get_value(random_numbers.pop())[0]
-        self.decel_value = self.decel_inv_cdf_obj.get_value(random_numbers.pop())[0]
+        self.accel_value = self.accel_inv_cdf_obj.get_value(random_numbers.pop())
+        self.cruising_duration_value = self.cruising_duration_inv_cdf_obj.get_value(random_numbers.pop())
+        self.avg_cruising_speed_value = self.avg_cruising_speed_inv_cdf_obj.get_value(random_numbers.pop())
+        self.decel_value = self.decel_inv_cdf_obj.get_value(random_numbers.pop())
+        self.idle_duration_value = self.idle_inv_cdf_obj.get_value(random_numbers.pop())
 
     def crusing_with_noise(self, time_array, velocity_noise_obj):
         """
         time_array: array of timestamps to compute for corresponding velocity noise using fitted model
         velocity_noise_obj: VN object containing fitted model and respective parameters for 3 freq components
-
-        return:: cruising_with_noise set of speed values containing average cruising speed superimposed on velocity noise
+        
+        return:: cruising_with_noise set of speed values containing average cruising speed superimposed on velocity noise 
         """
-        # resets time to match the specified duration of the driving pulse
+        #resets time to match the specified duration of the driving pulse
         velocity_noise_obj.set_t(time_array)
-        # returns velocity noise speed values (y axis)
+        #returns velocity noise speed values (y axis)
         velocity_noise = velocity_noise_obj.final_curve()
-        # scale the velocity noise so that velocity during crusing does not go negative
+        #scale the velocity noise so that velocity during crusing does not go negative
         scaled_velocity_noise = self.scale_velocity_noise(velocity_noise)
-        # adds velocity noise speed values (y axis) to static cruising speed
-        cruising_with_noise = scaled_velocity_noise + self.params["cruising speed"]
+        # scale vn again to have the ratio between velocity noise and average cruising speed to be the same as the sampled velocity noise
+        scaled_velocity_noise = velocity_noise_obj.noise_speed_ratio * scaled_velocity_noise
+        #adds velocity noise speed values (y axis) to static cruising speed
+        cruising_with_noise =  scaled_velocity_noise + self.params["cruising speed"]
 
-        plt.plot(time_array, cruising_with_noise)
-        plt.show()
+        # plt.plot(time_array, cruising_with_noise)
+        # plt.ylabel('speed (m/s)')
+        # plt.xlabel('time (s)')
+        # plt.show()
         return cruising_with_noise
 
     def scale_velocity_noise(self, velocity_noise):
@@ -251,13 +195,13 @@ class DP(object):
         # only scale the velocity noise if it results in a negative cruising with vn speed value
         if min_cruise_with_vn <= 0:
             # find the scale ratio that causes the lowest of the cruise with vn speed value to be 0
-            scale = self.params["cruising speed"] / (-min_vn)
+            scale = self.params["cruising speed"]/(-min_vn)
             print(scale)
             # round the value down
-            scale = int(math.floor(100 * scale))
+            scale = int(math.floor(100*scale))
             print(scale)
             # scale the vn
-            scaled_vn = (scale / 100) * velocity_noise
+            scaled_vn = (scale/100) * velocity_noise
             return scaled_vn
         return velocity_noise
 
@@ -266,22 +210,22 @@ class DP(object):
         accepts as parameters the 4 randomly selected values from the inverse cdfs, computes other parameters and returns
         this as a dictionary
         """
-        # computes acceleration time by using average cruising speed as initial speed of cruising duration
-        acceleration_time = 1000 * average_cruising_speed / acceleration
-        # computes decceleration time by using average cruising speed as final speed of cruising duration
+        #computes acceleration time by using average cruising speed as initial speed of cruising duration
+        acceleration_time= 1000 * average_cruising_speed / acceleration
+        #computes decceleration time by using average cruising speed as final speed of cruising duration
         decceleration_time = 1000 * average_cruising_speed / decceleration
-        # computes idle time by subtracting all other durations from total pulse duration
-        idle_time = (1000 * self.pulse_duration) - acceleration_time - decceleration_time - (1000 * cruising_duration)
-
-        # constructs parameters dictionary containing everything needed to generate driving pulse
+        #computes idle time by subtracting all other durations from total pulse duration
+        idle_time = (1000*self.pulse_duration) - acceleration_time - decceleration_time - (1000 * cruising_duration)
+        
+        #constructs parameters dictionary containing everything needed to generate driving pulse
         parameters = {"acceleration": acceleration,
-                      "decceleration": decceleration,
+                      "decceleration" : decceleration,
                       "acceleration duration": round(acceleration_time),
                       "decceleration duration": round(decceleration_time),
-                      "cruising duration": round(1000 * cruising_duration),
-                      "cruising speed": average_cruising_speed,
-                      "idle duration": idle_time,
-                      "total duration": 1000 * self.pulse_duration
+                      "cruising duration" : round(1000 * cruising_duration),
+                      "cruising speed" : average_cruising_speed,
+                      "idle duration" : idle_time,
+                      "total duration": 1000*self.pulse_duration
                       }
         return parameters
 
@@ -289,8 +233,7 @@ class DP(object):
         """ Function to be called from outside the class that outputs plot of generated driving pulse
         """
         self.random_select_params()
-        self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value,
-                                                      self.avg_cruising_speed_value)
+        self.params = self.parameters_for_drive_cycle(self.accel_value, self.decel_value, self.cruising_duration_value, self.avg_cruising_speed_value)
         print(self.params)
         # Call cruising_with_noise method to return corresponding values (y axis) for cruising
         # Inputs the whole pulse duration as cruise duration therefore extra values are present
@@ -299,10 +242,7 @@ class DP(object):
         # print(np.where(self.total_t[:]==self.params["acceleration duration"]))
         # print(np.where(self.total_t[:]==self.params["acceleration duration"])[0][0])
         # print(self.total_t[np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]:]/1000)
-        speed_while_cruising_extra_values = self.crusing_with_noise(self.total_t[np.where(
-            self.total_t[:] == self.params["acceleration duration"])[0][0]:np.where(
-            self.total_t[:] == (self.params["acceleration duration"] + self.params["cruising duration"]))[0][0]] / 1000,
-                                                                    velocity_noise_obj)
+        speed_while_cruising_extra_values = self.crusing_with_noise(self.total_t[np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]:np.where(self.total_t[:]==(self.params["acceleration duration"]+self.params["cruising duration"]))[0][0]]/1000, velocity_noise_obj)
         # computes initial cruising speed with velocity noise
         initial_cruising_speed = speed_while_cruising_extra_values[0]
         # print('initial_cruising_speed:{}'.format(initial_cruising_speed))
@@ -314,55 +254,56 @@ class DP(object):
         # print(self.total_t)
         # print(1000*self.params["acceleration duration"])
         # print(np.where(self.total_t[:]==self.params["acceleration duration"]))
-
+        
         # Retrieves x axis (time steps) and y axis (speed) values during acceleration period
-        accel_time_values = self.total_t[:np.where(self.total_t[:] == self.params["acceleration duration"])[0][0]]
+        accel_time_values = self.total_t[:np.where(self.total_t[:]==self.params["acceleration duration"])[0][0]]
         speed_during_acceleration = self.params["acceleration"] * accel_time_values / 1000
         current_time = self.params["acceleration duration"]
-
+        
         # Retrieves x axis (time steps) and y axis (speed) values during cruising period
-        cruising_time_values = self.total_t[np.where(self.total_t[:] == current_time)[0][0]:np.where(
-            self.total_t[:] == current_time + self.params["cruising duration"])[0][0]]
-        speed_during_cruising = speed_while_cruising_extra_values[
-                                :np.where(self.total_t[:] == self.params["cruising duration"])[0][0]]
+        cruising_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==current_time+self.params["cruising duration"])[0][0]]
+        speed_during_cruising = speed_while_cruising_extra_values[:np.where(self.total_t[:]==self.params["cruising duration"])[0][0]]
         current_time += self.params["cruising duration"]
-
+        
         # Retrieves x axis (time steps) and y axis (speed) values during decceleration period
         final_cruising_speed = speed_during_cruising[-1]
         # print(final_cruising_speed)
         # print(self.params["decceleration"])
         self.params["decceleration duration"] = round(1000 * final_cruising_speed / self.params["decceleration"])
         # print(self.params["decceleration duration"])
-        end_time = round(current_time + self.params["decceleration duration"])
-        deccel_time_values = self.total_t[
-                             np.where(self.total_t[:] == current_time)[0][0]:np.where(self.total_t[:] == end_time)[0][
-                                 0]]
-        speed_during_decceleration = final_cruising_speed - (
-                    self.params["decceleration"] / 1000 * np.linspace(1, self.params["decceleration duration"],
-                                                                      int(self.params["decceleration duration"])))
-        current_time += self.params["decceleration duration"]
+        end_time = round(current_time+self.params["decceleration duration"])
+        deccel_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==end_time)[0][0]]
+        speed_during_decceleration = final_cruising_speed - (self.params["decceleration"]/1000 * np.linspace(1, self.params["decceleration duration"], int(self.params["decceleration duration"])))
+        current_time += self.params["decceleration duration"] 
         # current_time = round(current_time,3)
+        
+        # # Retrieves x axis (time steps) and y axis (speed= 0) values during idle_time period
+        # idle_time_values = self.total_t[np.where(self.total_t[:]==current_time)[0][0]:np.where(self.total_t[:]==self.pulse_duration)[0][0]]                                            
+        # idle_time = 0 * idle_time_values
 
         # Retrieves x axis (time steps) and y axis (speed= 0) values during idle_time period
-        idle_time_values = self.total_t[np.where(self.total_t[:] == current_time)[0][0]:
-                                        np.where(self.total_t[:] == self.pulse_duration)[0][0]]
+        print('idle_duration = {}'.format(self.idle_duration_value))
+        idle_time_values = np.linspace(current_time, (current_time + int(1000*self.idle_duration_value)), int(1000*self.idle_duration_value)+1)                                           
         idle_time = 0 * idle_time_values
-
+        
         # Plot all 4 periods on same plot to visuale driving pulse
-        plt.plot(accel_time_values, speed_during_acceleration, 'r')
-        plt.plot(cruising_time_values, speed_during_cruising, 'b')
-        plt.plot(deccel_time_values, speed_during_decceleration, 'g')
-        plt.plot(idle_time_values, idle_time, 'r')
-        plt.show()
+        # plt.plot(accel_time_values/1000, speed_during_acceleration, 'r')  
+        # plt.plot(cruising_time_values/1000, speed_during_cruising, 'b') 
+        # plt.plot(deccel_time_values/1000, speed_during_decceleration, 'g') 
+        # plt.plot(idle_time_values/1000, idle_time, 'r')
+        # plt.ylabel('speed (m/s)')
+        # plt.xlabel('time (s)')
+        # plt.show()
 
-        time_steps = np.concatenate((accel_time_values, cruising_time_values, deccel_time_values, idle_time_values))
-        speed = np.concatenate(
-            (speed_during_acceleration, speed_during_cruising, speed_during_decceleration, idle_time))
+        time_steps = np.concatenate((accel_time_values,cruising_time_values,deccel_time_values,idle_time_values))
+        speed = np.concatenate((speed_during_acceleration,speed_during_cruising,speed_during_decceleration,idle_time))
 
-        df = pd.DataFrame({'time_steps': time_steps, 'speed': speed})
+        # df = pd.DataFrame({'time_steps':time_steps, 'speed':speed}) 
+        df = pd.DataFrame({'speed':speed}) 
 
-        df.to_csv('generated_data.csv', index=False, header=True)
+        # df.to_csv('generated_data.csv', index = False, header=True)
 
+        return df
 
 class Attribute(object):
     """ Generates a histogram according to the input array
@@ -724,13 +665,14 @@ class inv_cdf(object):
             self.y[idx] = res.x[0]
 
     def get_value(self, p):
-        """ Gives corresponding attribute value depending on p (ranging from 0 to 1)
+        """ Gives corresponding attribute value depending on p (ranging from 0 to 1000)
         """
-        x_copy = np.copy(self.x)
-        # find the index at which the x is equal to the input p
-        index = np.where(x_copy == p)
         # gets the corresponding attribute value depending on the index
-        value = self.y[index]
+        value = self.y[int(p)]
+        if value < 0:
+            value = abs(value)
+        elif value == 0:
+            value = self.y[int(p+5)]
 
         return value
 
@@ -740,16 +682,19 @@ class Velocity_Noise(object):
         self.y = y
         self.original_y = y
         self.original_y_mean = self.original_y.mean()
-
+        
     def set_t(self, t):
         """Set t values
         """
         self.t = t
 
     def subtract_avg(self):
-        """Removes the average speed from the observations
+        """Removes the average speed from the observations and gets the velocity noise to speed ratio
         """
+        # remove average cruising speed
         self.y = self.y - self.original_y_mean
+        # get a ratio of how low vn drops relative to the average cruising speed
+        self.noise_speed_ratio = -min(self.y)/self.original_y_mean
         return self.y
 
     def subtract(self, array):
@@ -825,11 +770,6 @@ class Velocity_Noise(object):
         """
         return (self.y - self.eqn_model(params))
 
-    # def fnc2min(self, params):
-    #     """ Returns the residuals (eqn 7) for the model for when running one component at a time
-    #     """
-    #     return (self.y - self.single_component(params['A_FS'], params['w_FS'], params['phi_FS']))
-
 
     def NLLSR(self, LMparams):
         """ Returns the result of the NLLSR using LMFit
@@ -841,36 +781,63 @@ class Velocity_Noise(object):
 
         return LMFitResult
 
+class DC(object):
+    """ Module 1: Drive Cycle
+    """
+    def __init__(self, dc_length):
+        
+        # t_DC = dc_length
+        # sum_t_DS = 0
+        # while t_DC > sum_t_DS:
+        #     pass
+        # pass
+        self.drive_cycle_duration = dc_length #hours
+
+    def generate_drive_cycle(self, extract_obj):
+        pulse_duration=1000
+        driving_pulse = DP(pulse_duration, extract_obj)
+        drive_cycle_df = pd.DataFrame()
+
+        num_of_vn = len(extract_obj.cruise_with_vn)
+
+        while len(drive_cycle_df) < (self.drive_cycle_duration * 60 * 60 * 1000):
+            random_noise_index = int(np.random.rand() * num_of_vn)
+            # get the slice of ONLY cruising period
+            cruising_data = extract_obj.cruise_with_vn[random_noise_index]
+            # create a numpy array of just t values starting at t=1
+            t = np.linspace(1,len(cruising_data),len(cruising_data))
+            # create a numpy array of speed_mps values
+            y = cruising_data.to_numpy()
+            # interpolate linearly and make timesteps finer (0.001s)
+            f = interp1d(t, y)
+            t = np.linspace(1,len(cruising_data),1000*len(cruising_data))
+            y = f(t)
+
+            # initialise the VN object
+            vn_obj = Velocity_Noise(t,y)
+            # deduct the average from the cruising period speed values (from fig3a to fig3b) and store as y
+            y = vn_obj.subtract_avg()
+            # perform NLLSR with the initial parameters suggested by LMParams
+            hi = vn_obj.fit_all()
+
+            drive_cycle_df = drive_cycle_df.append(driving_pulse.generate_driving_pulse(vn_obj), ignore_index = True)
+
+        drive_cycle_df.to_csv('generated_data.csv', index = False, header=True)
+
+        plt.plot(drive_cycle_df.index/1000, drive_cycle_df, 'r')
+        plt.ylabel('speed (m/s)')
+        plt.xlabel('time (s)')
+        plt.show()
+
+        
+
+
 if __name__ == '__main__':
     # loads the csv file and extract the attribute informations
-    file_name = 'october_21_to_31.csv'
+    # file_name = 'device12_oct_classified.csv'
+    file_name = 'device12_oct_7_to_10_classified_updated.csv'
     subdir = ''
     extract_obj = Extract_Hist(file_name, subdir)
-    # get the slice of ONLY cruising period
-    cruising_data = extract_obj.cruise_with_vn[270]
-    # create a numpy array of just t values starting at t=1
-    t = np.linspace(1,len(cruising_data),len(cruising_data))
-    # create a numpy array of speed_mps values
-    y = cruising_data.to_numpy()
-    # interpolate linearly and make timesteps finer (0.001s)
-    from scipy.interpolate import interp1d
-    f = interp1d(t, y)
-    t = np.linspace(1,len(cruising_data),1000*len(cruising_data))
-    y = f(t)
-
-    # initialise the VN object
-    vn_obj = Velocity_Noise(t,y)
-    # deduct the average from the cruising period speed values (from fig3a to fig3b) and store as y
-    y = vn_obj.subtract_avg()
-
-    original_y = y
-    
-    # perform NLLSR with the initial parameters suggested by LMParams
-    hi = vn_obj.fit_all()
-    yy = vn_obj.final_curve()
-    
-    pulse_duration=10000
-    driving_pulse = DP(pulse_duration, extract_obj)
-    driving_pulse.generate_driving_pulse(vn_obj)
-    driving_pulse.generate_driving_pulse(vn_obj)
-    driving_pulse.generate_driving_pulse(vn_obj)
+    num_of_days = 1
+    drive_cycle = DC(num_of_days*24)
+    drive_cycle.generate_drive_cycle(extract_obj)
