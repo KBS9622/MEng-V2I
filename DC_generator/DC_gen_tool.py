@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import lmfit
 import random
 from scipy.interpolate import interp1d
+from datetime import datetime, timedelta
 # np.set_printoptions(threshold=sys.maxsize)
 
 def load_csv_data(file_name, subdir=''):
@@ -820,11 +821,24 @@ class DC(object):
             # perform NLLSR with the initial parameters suggested by LMParams
             hi = vn_obj.fit_all()
 
-            drive_cycle_df = drive_cycle_df.append(driving_pulse.generate_driving_pulse(vn_obj), ignore_index = True)
+            single_pulse = driving_pulse.generate_driving_pulse(vn_obj)
+            date_today = datetime.now()
+            ms_index = pd.date_range(date_today, date_today + timedelta(milliseconds=len(single_pulse)-1), freq='L')
+            single_pulse['Datetime'] = ms_index
+            single_pulse = single_pulse.set_index('Datetime')
+            single_pulse = single_pulse.resample('S').mean()
+            single_pulse = single_pulse.drop(columns=['Datetime'])
 
+            drive_cycle_df = drive_cycle_df.append(single_pulse, ignore_index = True)
+
+        # date_today = datetime.now()
+        # ms_index = pd.date_range(date_today, date_today + timedelta(milliseconds=len(drive_cycle_df)-1), freq='L')
+        # drive_cycle_df['Datetime'] = ms_index
+        # drive_cycle_df = drive_cycle_df.set_index('Datetime')
+        # drive_cycle_df = drive_cycle_df.resample('S').mean()
         drive_cycle_df.to_csv('generated_data.csv', index = False, header=True)
 
-        plt.plot(drive_cycle_df.index/1000, drive_cycle_df, 'r')
+        plt.plot(drive_cycle_df.index, drive_cycle_df, 'r')
         plt.ylabel('speed (m/s)')
         plt.xlabel('time (s)')
         plt.show()

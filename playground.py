@@ -37,21 +37,21 @@ def show_figure(fig):
 # print(outlier_index)
 
 
-file_path = 'caltrans_L2_Epoch1900.csv'
+file_path = 'device12_oct_7_to_10_classified_updated.csv'
 df = pd.read_csv(file_path)
 
 # remove observations when nothing happens as it can drown out the graph
-df = df[(df['Fake_speed']!=0) & (df['Fake_acc']!=0)]
+df = df[(df['speed_mps']!=0) & (df['accel_mps2']!=0)]
 # convert the units to metres per second from mph
-df = df/2.237
-print(df['Fake_speed'].min())
-print(df['Fake_speed'].max())
-print(df['Fake_acc'].min())
-print(df['Fake_acc'].max())
+# df = df/2.237
+print(df['speed_mps'].min())
+print(df['speed_mps'].max())
+print(df['accel_mps2'].min())
+print(df['accel_mps2'].max())
 # x axis is the speed
-x = df['Fake_speed'].to_numpy()
+x = df['speed_mps'].to_numpy()
 # y axis is the acceleration
-y = df['Fake_acc'].to_numpy()
+y = df['accel_mps2'].to_numpy()
 
 # # remove observations when nothing happens as it can drown out the graph
 # df = df[(df['Real_speed']!=0) & (df['Real_acc']!=0)]
@@ -93,10 +93,10 @@ min_height = np.min(dz)
 rgba = [cmap((k-min_height)/max_height) for k in dz] 
 
 ax.bar3d(xpos, ypos, zpos, dx, dy, dz, color=rgba, zsort='average')
-plt.title("speed vs accel for generated caltrans 1035198_1 d28 Data")
+plt.title("speed vs accel for input DCGT Data")
 plt.xlabel("speed (mps)")
 plt.ylabel("accel (mps2)")
-plt.savefig("3D fake caltrans 1035198_1 d28")
+plt.savefig("3D input DCGT 3 day")
 plt.show()
 
 # 2D histogram
@@ -104,10 +104,10 @@ extent = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
 fig,ax=plt.subplots(1,1)
 plt.imshow(hist.T, extent= extent, origin='lower')
 plt.colorbar()
-plt.title("speed vs accel for generated caltrans 1035198_1 d28 Data")
+plt.title("speed vs accel for input DCGT Data")
 plt.xlabel("speed (mps)")
 plt.ylabel("accel (mps2)")
-plt.savefig("2D fake caltrans 1035198_1 d28")
+plt.savefig("2D input DCGT 3 day")
 plt.show()
 
 ##### Contour
