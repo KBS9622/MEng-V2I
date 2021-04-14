@@ -160,11 +160,11 @@ class charging_recommendation(object):
         # load the battery profile from csv
         battery_profile = pd.read_csv(self.config_dict['EV_info']['Battery_profile'])
         Wh_to_J = 3600
-        # SOC below which uncontrolled charging starts
+        # SOC and charge level below which uncontrolled charging starts
         SOC_threshold = 50
         charge_threshold = (SOC_threshold / 100) * self.config_dict['EV_info']['Capacity']
-        amount_to_charge = self.config_dict['EV_info']['Capacity'] - self.config_dict['Charge_level']
-        time_to_stop_charging = 30  # system should stop charging 30 min prior to next journey, for error purposes
+        # system should stop charging 30 min prior to next journey, for error purposes
+        time_to_stop_charging = 30  
 
         # Copy the TOU_data df and create two new columns to be filled
         temp_pred = self.TOU_data.copy()
@@ -173,8 +173,14 @@ class charging_recommendation(object):
         pred = self.charging_slot_availability(pred=temp_pred)
 
         if self.config_dict['Charge_level'] < charge_threshold:
-            charge_time = amount_to_charge * Wh_to_J / (
-                        (self.config_dict['Charger_efficiency'] / 100) * self.config_dict['Charger_power'] * 60)
+
+            # get the index for the 'energy' value closest to the expected_initial_charge value as a reference index
+            nearest_start = battery_profile.iloc[(battery_profile['Charge_level']-self.config_dict['Charge_level']).abs().argsort()[:1],-1].index.to_list()[0]
+            # get the index for the 'energy' value closest to the expected_charge value as a reference index
+            nearest_end = battery_profile.iloc[(battery_profile['Charge_level']-self.config_dict['EV_info']['Capacity']).abs().argsort()[:1],-1].index.to_list()[0]
+            # the time needed to charge up to the expected charge value from the expected initil charge value is just the difference of the index values, then convert from s to min
+            charge_time = (nearest_end - nearest_start)/60
+
             start = self.journey_start[0]
             # ignore any full slots
             free_time_slots = pred.loc[np.logical_and(pred.index < start - timedelta(minutes=time_to_stop_charging),
@@ -184,17 +190,24 @@ class charging_recommendation(object):
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
+                # calculate how much time could be allocated for charging
                 charge_time = (30 * len(free_time_slots)) - sum(free_time_slots['charging'])
                 print('charging for : {} mins'.format(charge_time))
+                # allocate the timeslots
                 pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
+                # subtract journey time from charging time so that the df column only contains charging time
                 pred['charging'] -= pred['journey']
+                # save the column in the object df variable
                 self.predicted_EV_data['charging'] = pred['charging']
 
                 return pred.loc[pred['charging'] > 0, 'charging']
 
+            # allocate the timeslots
             pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
-        # subtract journey time from charging time
+
+        # subtract journey time from charging time so that the df column only contains charging time
         pred['charging'] -= pred['journey']
+        # save the column in the object df variable
         self.predicted_EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
@@ -236,7 +249,7 @@ class charging_recommendation(object):
             sum_of_P_total = sum(self.predicted_EV_data.loc[start:end]['P_total'])  # given in Joules
             journey_energy_consumption = sum_of_P_total * (self.config_dict[
                                                                'Charger_efficiency'] / 100)  # given in Joules, this value is the value to be deducted from the battery
-            print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
+            # print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -254,20 +267,10 @@ class charging_recommendation(object):
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
             # print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
-            # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
-            # charge_time = journey_energy_consumption / (
-            #             (self.config_dict['Charger_efficiency'] / 100) * self.config_dict[
-            #         'Charger_power'] * 60)  # gives charging time in minutes
-            # deduce charge time required by looking into the battery_profile df
-            print('journey_energy_consumption:{}'.format(journey_energy_consumption/3600))
-            print('expected_initial_charge:{}'.format(expected_initial_charge/3600))
-            print('expected_charge:{}'.format(expected_charge/3600))
             # get the index for the 'energy' value closest to the expected_initial_charge value as a reference index
             nearest_start = battery_profile.iloc[(battery_profile['Charge_level']-(expected_initial_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
-            print('nearest_start:\n{}'.format(nearest_start))
             # get the index for the 'energy' value closest to the expected_charge value as a reference index
             nearest_end = battery_profile.iloc[(battery_profile['Charge_level']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
-            print('nearest_end:\n{}'.format(nearest_end))
             # the time needed to charge up to the expected charge value from the expected initil charge value is just the difference of the index values, then convert from s to min
             charge_time = (nearest_end - nearest_start)/60
 
@@ -283,11 +286,6 @@ class charging_recommendation(object):
 
             pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
 
-        # add TOU and SOC (charge level) consideration here (Boon)
-        # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
-        # charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (
-        #             self.config_dict['Charger_efficiency'] / 100)  # in J for each 30 min timeslot
-        # seconds_per_slot = 30 * 60
         # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
         while expected_charge < upper_limit:
             # ignore any full slots and sort TOU slots by price
@@ -296,32 +294,6 @@ class charging_recommendation(object):
 
             # if the cheapest TOU slot is below threshold, charge for that slot
             if free_time_slots.iloc[0]['TOU'] <= self.config_dict['TOU_threshold']:
-                # # if the cheapest slot is partially filled, then calculate how much charge the system would add for the rest of the timeslot
-                # if free_time_slots.iloc[0]['charging'] != 0:
-                #     remainder = free_time_slots.iloc[0]['charging']
-                #     charge_time = 30 - remainder
-                #     # if charging for the remainder of the slot will NOT exceed upper limit, allocate full slot
-                #     if (upper_limit - expected_charge) >= (self.config_dict['Charger_power'] * 60 * charge_time):
-                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
-                #         expected_charge += (self.config_dict['Charger_power'] * 60 * charge_time)
-                #     # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
-                #     else:
-                #         charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
-                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
-                #         expected_charge = upper_limit
-                # else:
-                #     # if charging for the full slot will NOT exceed upper limit, allocate full slot
-                #     if (upper_limit - expected_charge) >= charge_per_timeslot:
-                #         # fill up entire empty slot
-                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
-                #         expected_charge += charge_per_timeslot
-                #     # if charging for the full slot WILL exceed upper limit, allocate partial slot to charge up to upper limit
-                #     else:
-                #         charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
-                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time
-                #         expected_charge = upper_limit
-                # # include the charge curve in the loop to update charge_per_timeslot according to current SOC
-
                 # determine how much time has already been allocated for the cheapest available timeslot
                 remainder = free_time_slots.iloc[0]['charging']
                 # calculate how much time (in minutes) left in the timeslot to allocate charge
@@ -349,9 +321,6 @@ class charging_recommendation(object):
             else:
                 print('TOU exceeds threshold, no additional charge slots allocated.')
                 break
-
-        # TOU threshold charging (old implementation without SOC consideration)
-        # pred.loc[pred['TOU'] <= threshold, 'charging'] = 30
 
         # subtract journey time from charging time
         pred['charging'] -= pred['journey']
