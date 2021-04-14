@@ -1,13 +1,13 @@
 {
   "User_ID": "00000001",
   "_comment": "EV given parameters",
-  "SOC": 0.0,
-  "Charge_level": 0,
+  "SOC": 34.816394735198486,
+  "Charge_level": 6545.482210217316,
   "_comment2": "User defined parameter",
   "Charger_power": 3000,
   "TOU_threshold": 0,
-  "Lower_buffer": 25,
-  "Upper_buffer": 80,
+  "Lower_buffer": 0,
+  "Upper_buffer": 100,
   "Emergency_reserves": 0,
   "Home_location": "London",
   "Charger_efficiency": 93,
@@ -17,7 +17,7 @@
     "Capacity": 18800,
     "Battery_profile": "BMW_i3_battery_profile_L2.csv"
   },
-  "Manual_override": false,
+  "Manual_override": true,
   "System_consideration_span": 24,
   "Utilities_info": {
     "Supplier": "Octopus Energy",

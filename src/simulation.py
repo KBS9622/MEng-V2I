@@ -34,9 +34,12 @@ class Simulation:
         recommended_slots = self.run_recommendation_algorithm()
         # calls method calculate_cost_and_energy()
         df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
+        # saves the load profile for the allocated charge slots in a csv
+        self.load_profile(df_price_and_time)
         # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
         self.ev_obj.charge(total_charge_time)
+        # if there is any charging activity, print
         if not df_price_and_time.empty:
             # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
             print(
@@ -45,6 +48,25 @@ class Simulation:
             self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
             self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
         print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
+
+    def load_profile(self, df):
+        # load the battery profile from csv
+        battery_profile = pd.read_csv(self.ev_obj.config_dict['EV_info']['Battery_profile'])
+        # get the index for the charge level value nearest to init_charge from the battery_profile df
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
+        time_stamps = df.index
+        print(time_stamps)
+        charging_time_seconds = (df["charging"]*60).astype(int)
+        print(charging_time_seconds)
+        total_charge_time = sum(charging_time_seconds)
+        new_df = pd.DataFrame(battery_profile['Power'].iloc[init_charge_idx:(init_charge_idx+total_charge_time)],columns=['Power'])
+        new_df['time_stamp'] = charging_time_seconds.loc[charging_time_seconds.index.repeat(charging_time_seconds)].index
+        print(new_df)
+        # temp = pd.DataFrame()
+        # for x in range(len(time_stamps)):
+
+
+
 
     def calculate_cost_and_energy(self, time_slots_charging):
         """
