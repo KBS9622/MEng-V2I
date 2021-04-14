@@ -98,6 +98,7 @@ energy_cost_df = simulation_obj.energy_cost
 energy_cost_df.append(total_energy_cost)
 print('energy bought : {}'.format(energy_bought_df))
 print('energy cost : {}'.format(energy_cost_df))
+print('Total deficit (error): ',simulation_obj.ev_obj.deficit)
 
 # previous_ev_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-25 23:59:59'))
 # predicted_tou_data = simulation_obj.get_tou_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-26 23:30:00'))

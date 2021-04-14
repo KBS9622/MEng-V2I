@@ -220,13 +220,6 @@ class EV(object):
         # and is showing the amount of energy that would be added to the battery given the charging time
         power = (expected_end_charge - init_charge)
 
-
-        # # power_in_joules = self.config_dict['Charger_power'] * charge_time * 60
-
-        # n_battery = 93  # battery efficiency
-        # Wh_to_J = 3600
-        # power = (power_in_joules / Wh_to_J) * (n_battery / 100)  # convert joules to Wh
-
         if (max_charge_lvl - self.config_dict['Charge_level']) >= power:
             self.config_dict['Charge_level'] += power
         else:
@@ -260,15 +253,23 @@ class EV(object):
         # power deducted from battery, accounting for n_battery
         power = (journey_power / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
 
-        if power > (self.config_dict['Charge_level'] - min_charge_lvl + 0.05):
+
+        if power > (self.config_dict['Charge_level'] - min_charge_lvl + 0.015):
+            # if the energy consumption ('power' variable) is more than what the battery has stored (minus battery buffer limit applied by OEM)
+            # calculate the amount of energy that is in deficit due to energy consumption being larger than what was stored
             temp = power - (self.config_dict['Charge_level'] - min_charge_lvl)
+            # keep track of how much deficit the EV has faced in total
             self.deficit += temp
+            # print error message
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(temp))
+            # set the battery charge level to the minimum as dictated by OEM
             self.config_dict['Charge_level'] = min_charge_lvl
         elif power > (self.config_dict['Charge_level'] - min_charge_lvl):
             # to account for the difference in the decimal place that the JSON stores for charge level
             self.config_dict['Charge_level'] = min_charge_lvl
+            print('it reached here')
         else:
+            # if there is sufficient energy stored in battery, deduct the required energy from the available energy stored
             self.config_dict['Charge_level'] -= power
 
         # calculates the new instantaneous SOC

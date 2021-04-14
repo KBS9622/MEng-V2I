@@ -37,12 +37,14 @@ class Simulation:
         # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
         self.ev_obj.charge(total_charge_time)
-        # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
-        print(
-            f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
-        print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
-        self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
-        self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
+        if not df_price_and_time.empty:
+            # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
+            print(
+                f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
+            print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
+            self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
+            self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
+        print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
 
     def calculate_cost_and_energy(self, time_slots_charging):
         """
@@ -68,11 +70,13 @@ class Simulation:
             end_idx = init_charge_idx + charge_time_seconds
             # calculate the energy (in kWh) that would be bought (amount charged + loss) if the rest of the timeslot were to be allocated 
             df_price_and_time.loc[df_price_and_time.index[x],"energy_per_time_slot (kWh)"] = (battery_profile.iloc[end_idx,-1] - battery_profile.iloc[init_charge_idx,-1])/(1000*(self.ev_obj.config_dict['Charger_efficiency']/100))
+            # calculate the cost to charge in that timeslot for the amount of energy bought
+            df_price_and_time.loc[df_price_and_time.index[x],"cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"].iloc[x] * df_price_and_time["TOU"].iloc[x]
             # update the inital charge index for next timeslot
             init_charge_idx = end_idx
 
-        df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * \
-                                                      df_price_and_time['TOU']
+        # df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * \
+        #                                               df_price_and_time['TOU']
 
         print(df_price_and_time)
         # total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
@@ -93,10 +97,11 @@ class Simulation:
         start_time = self.start_next_day
         end_time = self.start_next_day + pd.offsets.Hour(24) - pd.offsets.Second(1)
         yesterdays_ev_data = self.get_ev_data(start_time=start_time, end_time=end_time)
-        print(yesterdays_ev_data)
+        # print(yesterdays_ev_data)
 
         total_energy = yesterdays_ev_data['P_total'].sum()
         print(total_energy)
+
         # converts the sum from above to Wh and removes battery charging efficiency to SHOW how many Wh to deduct
         # from battery (as P_total accounts for both battery efficiencies)
         wh_to_j = 3600
@@ -105,6 +110,7 @@ class Simulation:
         # calls method discharge() from ev_obj (an object of class EV)
         # Note: the method below uses 'total_energy' instead of the variable 'power' that was calculated above
         self.ev_obj.discharge(total_energy)
+        print('Charge level at end of trigger_discharge',self.ev_obj.config_dict['Charge_level'])
 
     def create_recommendation_obj(self):
         """

@@ -260,7 +260,7 @@ class charging_recommendation(object):
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
-                if journey_energy_consumption < 0.05:
+                if journey_energy_consumption < 0.015:
                     # this is to account for the difference in the decimal place that the JSON stores for charge level
                     journey_energy_consumption = 0
             expected_initial_charge = expected_charge # this is the charge level, assuming previously allocated slots have already charged (for the purpose of battery_profile)
