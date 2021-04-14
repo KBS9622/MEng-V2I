@@ -203,15 +203,29 @@ class EV(object):
         """
         # get updated vehicle info
         self.pull_user_config()
+        # load the battery profile from csv
+        battery_profile = pd.read_csv(self.config_dict['EV_info']['Battery_profile'])
         # maximum SOC to ensure safe operation (probably redundant unless recommend buffer fails)
         max_soc = 100  # in %
         max_charge_lvl = (max_soc / 100) * self.config_dict['EV_info']['Capacity']
 
-        power_in_joules = self.config_dict['Charger_power'] * charge_time * 60
+        # calculate the charge time in seconds so that we can look up the time in battery_profile
+        charge_time_seconds = int(charge_time*60)
+        init_charge = self.config_dict['Charge_level'] #in Wh
+        # get the index for the charge level value nearest to init_charge from the battery_profile df
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(init_charge)).abs().argsort()[:1],-1].index.to_list()[0]
+        # get the charge level value for the index (init_charge_idx + charge_time_seconds) from the battery_profile df
+        expected_end_charge = battery_profile.iloc[(init_charge_idx+charge_time_seconds),-1]
+        # there is no need to take into account of efficiency as the battery_profile has already taken that into account 
+        # and is showing the amount of energy that would be added to the battery given the charging time
+        power = (expected_end_charge - init_charge)
 
-        n_battery = 90  # battery efficiency
-        Wh_to_J = 3600
-        power = (power_in_joules / Wh_to_J) * (n_battery / 100)  # convert joules to Wh
+
+        # # power_in_joules = self.config_dict['Charger_power'] * charge_time * 60
+
+        # n_battery = 93  # battery efficiency
+        # Wh_to_J = 3600
+        # power = (power_in_joules / Wh_to_J) * (n_battery / 100)  # convert joules to Wh
 
         if (max_charge_lvl - self.config_dict['Charge_level']) >= power:
             self.config_dict['Charge_level'] += power
@@ -246,7 +260,7 @@ class EV(object):
         # power deducted from battery, accounting for n_battery
         power = (journey_power / Wh_to_J) / (n_battery / 100)  # convert joules to Wh
 
-        if power > (self.config_dict['Charge_level'] - min_charge_lvl + 0.015):
+        if power > (self.config_dict['Charge_level'] - min_charge_lvl + 0.05):
             temp = power - (self.config_dict['Charge_level'] - min_charge_lvl)
             self.deficit += temp
             print('Battery is COMPLETELY drained, {} Wh of energy deficit'.format(temp))

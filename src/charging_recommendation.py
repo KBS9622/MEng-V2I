@@ -157,7 +157,10 @@ class charging_recommendation(object):
         :param data: -
         :return: uncontroled charging slots
         """
+        # load the battery profile from csv
+        battery_profile = pd.read_csv(self.config_dict['EV_info']['Battery_profile'])
         Wh_to_J = 3600
+        # SOC below which uncontrolled charging starts
         SOC_threshold = 50
         charge_threshold = (SOC_threshold / 100) * self.config_dict['EV_info']['Capacity']
         amount_to_charge = self.config_dict['EV_info']['Capacity'] - self.config_dict['Charge_level']
@@ -195,7 +198,7 @@ class charging_recommendation(object):
         self.predicted_EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
-
+    
     def recommend(self):
         """
         Method to recommend charging times (Scheduler Module)
@@ -203,6 +206,8 @@ class charging_recommendation(object):
         :param data: -
         :return: recommmended charging slots
         """
+        # load the battery profile from csv
+        battery_profile = pd.read_csv(self.config_dict['EV_info']['Battery_profile'])
         # **** maybe before the system runs the scheduler, it should use API to request up to date info from EV, like SOC and charge level
         # could add limit to when the EV is actually home and ready to charge (by reading the current passing through charger when initially plugged in)
         Wh_to_J = 3600
@@ -231,7 +236,7 @@ class charging_recommendation(object):
             sum_of_P_total = sum(self.predicted_EV_data.loc[start:end]['P_total'])  # given in Joules
             journey_energy_consumption = sum_of_P_total * (self.config_dict[
                                                                'Charger_efficiency'] / 100)  # given in Joules, this value is the value to be deducted from the battery
-            # print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
+            print('journey energy consumption including discharging efficiency: {} Wh'.format(journey_energy_consumption/3600))
 
             # -> this is where the SOC (charge level) consideration takes place (Boon)
             if available_charge >= journey_energy_consumption:
@@ -242,16 +247,29 @@ class charging_recommendation(object):
                 # reduce the additional charge needed to allow EV to complete this journey
                 journey_energy_consumption = journey_energy_consumption - available_charge
                 available_charge = 0
-                if journey_energy_consumption < 0.015:
+                if journey_energy_consumption < 0.05:
                     # this is to account for the difference in the decimal place that the JSON stores for charge level
                     journey_energy_consumption = 0
+            expected_initial_charge = expected_charge # this is the charge level, assuming previously allocated slots have already charged (for the purpose of battery_profile)
             expected_charge = expected_charge + journey_energy_consumption  # keep track of expected charge level after charging
             # print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
             # charge time is the time equivalent of the energy needed to be pushed by the charger (not what ends up in battery)
-            charge_time = journey_energy_consumption / (
-                        (self.config_dict['Charger_efficiency'] / 100) * self.config_dict[
-                    'Charger_power'] * 60)  # gives charging time in minutes
+            # charge_time = journey_energy_consumption / (
+            #             (self.config_dict['Charger_efficiency'] / 100) * self.config_dict[
+            #         'Charger_power'] * 60)  # gives charging time in minutes
+            # deduce charge time required by looking into the battery_profile df
+            print('journey_energy_consumption:{}'.format(journey_energy_consumption/3600))
+            print('expected_initial_charge:{}'.format(expected_initial_charge/3600))
+            print('expected_charge:{}'.format(expected_charge/3600))
+            # get the index for the 'energy' value closest to the expected_initial_charge value as a reference index
+            nearest_start = battery_profile.iloc[(battery_profile['Charge_level']-(expected_initial_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+            print('nearest_start:\n{}'.format(nearest_start))
+            # get the index for the 'energy' value closest to the expected_charge value as a reference index
+            nearest_end = battery_profile.iloc[(battery_profile['Charge_level']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+            print('nearest_end:\n{}'.format(nearest_end))
+            # the time needed to charge up to the expected charge value from the expected initil charge value is just the difference of the index values, then convert from s to min
+            charge_time = (nearest_end - nearest_start)/60
 
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[np.logical_and(pred.index < start, pred['charging'] < 30)].copy()
@@ -267,40 +285,67 @@ class charging_recommendation(object):
 
         # add TOU and SOC (charge level) consideration here (Boon)
         # ASSUMPTION: charging rate is not dependent on current SOC. For more accurate result, implement a charging curve for the specific vehicle
-        charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (
-                    self.config_dict['Charger_efficiency'] / 100)  # in J for each 30 min timeslot
+        # charge_per_timeslot = self.config_dict['Charger_power'] * 60 * 30 * (
+        #             self.config_dict['Charger_efficiency'] / 100)  # in J for each 30 min timeslot
+        # seconds_per_slot = 30 * 60
         # charge the EV if the additional charge does not cause charge level to exceed limit AND if the price of the timeslot is below threshold
         while expected_charge < upper_limit:
             # ignore any full slots and sort TOU slots by price
             free_time_slots = pred.loc[pred['charging'] < 30].copy()
             free_time_slots = free_time_slots.sort_values(by=['TOU'])
+
             # if the cheapest TOU slot is below threshold, charge for that slot
             if free_time_slots.iloc[0]['TOU'] <= self.config_dict['TOU_threshold']:
-                # if the cheapest slot is partially filled, then calculate how much charge the system would add for the rest of the timeslot
-                if free_time_slots.iloc[0]['charging'] != 0:
-                    remainder = free_time_slots.iloc[0]['charging']
-                    charge_time = 30 - remainder
-                    # if charging for the remainder of the slot will NOT exceed upper limit, allocate full slot
-                    if (upper_limit - expected_charge) >= (self.config_dict['Charger_power'] * 60 * charge_time):
-                        pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
-                        expected_charge += (self.config_dict['Charger_power'] * 60 * charge_time)
-                    # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
-                    else:
-                        charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
-                        pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
-                        expected_charge = upper_limit
+                # # if the cheapest slot is partially filled, then calculate how much charge the system would add for the rest of the timeslot
+                # if free_time_slots.iloc[0]['charging'] != 0:
+                #     remainder = free_time_slots.iloc[0]['charging']
+                #     charge_time = 30 - remainder
+                #     # if charging for the remainder of the slot will NOT exceed upper limit, allocate full slot
+                #     if (upper_limit - expected_charge) >= (self.config_dict['Charger_power'] * 60 * charge_time):
+                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
+                #         expected_charge += (self.config_dict['Charger_power'] * 60 * charge_time)
+                #     # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
+                #     else:
+                #         charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
+                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
+                #         expected_charge = upper_limit
+                # else:
+                #     # if charging for the full slot will NOT exceed upper limit, allocate full slot
+                #     if (upper_limit - expected_charge) >= charge_per_timeslot:
+                #         # fill up entire empty slot
+                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
+                #         expected_charge += charge_per_timeslot
+                #     # if charging for the full slot WILL exceed upper limit, allocate partial slot to charge up to upper limit
+                #     else:
+                #         charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
+                #         pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time
+                #         expected_charge = upper_limit
+                # # include the charge curve in the loop to update charge_per_timeslot according to current SOC
+
+                # determine how much time has already been allocated for the cheapest available timeslot
+                remainder = free_time_slots.iloc[0]['charging']
+                # calculate how much time (in minutes) left in the timeslot to allocate charge
+                charge_time = 30 - remainder
+                # calculate the charge time in seconds so that we can look up the time in battery_profile
+                charge_time_seconds = int(charge_time*60)
+                # find the amount of energy that could be charged in this timeslot based on expected charge level after all previous charging allocations
+                # get the index for the 'energy' value closest to the expected charge value as a reference index
+                expected_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+                # calculate the energy (in joules) that would be charged if the rest of the timeslot were to be allocated 
+                charge_for_timeslot = 3600*(battery_profile.iloc[(expected_charge_idx+charge_time_seconds),-1] - battery_profile.iloc[(expected_charge_idx),-1])
+
+                # if charging for the remainder of the slot will NOT exceed upper limit, allocate full slot
+                if (upper_limit - expected_charge) >= charge_for_timeslot:
+                    pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
+                    expected_charge += charge_for_timeslot
+                # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
                 else:
-                    # if charging for the full slot will NOT exceed upper limit, allocate full slot
-                    if (upper_limit - expected_charge) >= charge_per_timeslot:
-                        # fill up entire empty slot
-                        pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = 30
-                        expected_charge += charge_per_timeslot
-                    # if charging for the full slot WILL exceed upper limit, allocate partial slot to charge up to upper limit
-                    else:
-                        charge_time = (upper_limit - expected_charge) / (self.config_dict['Charger_power'] * 60)
-                        pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time
-                        expected_charge = upper_limit
-                # include the charge curve in the loop to update charge_per_timeslot according to current SOC
+                    # get the index for the 'energy' value closest to the upper limit value as a reference index
+                    upper_limit_idx = battery_profile.iloc[(battery_profile['Charge_level']-(upper_limit/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+                    charge_time = (upper_limit_idx - expected_charge_idx)/60
+                    pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
+                    expected_charge = upper_limit
+
             else:
                 print('TOU exceeds threshold, no additional charge slots allocated.')
                 break

@@ -135,26 +135,37 @@ def sum_energy(data, journey_start, journey_end):
     return final_df
 
 if __name__ == "__main__":
-    path = 'TimeSeriesPrediction/combined/'
-    which_data = '12_sep_oct_nov_nov_dec.csv'
-    df = load_data(path, which_data)
+    # path = 'TimeSeriesPrediction/combined/'
+    # which_data = '12_sep_oct_nov_nov_dec.csv'
+    # df = load_data(path, which_data)
     # df['timeStamp'] = pd.to_datetime(df['timeStamp'], format='%d/%m/%Y %H:%M:%S')
     # print(df.head())
-    journey_start, journey_end = find_journey_start_and_end_points(df)
+    # journey_start, journey_end = find_journey_start_and_end_points(df)
     # print(journey_start, journey_end)
-    df = remove_wrong_accel(df, journey_start)
+    # df = remove_wrong_accel(df, journey_start)
+    # # print(df)
+    # json_path = "./utils/user_config.json"
+    # ev_obj = EV_mod(df, json_path)
+    # df_ecm = ev_obj.data
+    # print(df_ecm)
+    # final_df = sum_energy(df_ecm, journey_start, journey_end)
+    # # final_df.to_csv(r'Device_12_ecm.csv')
+    # print(final_df)
+    # final_df['start'] = pd.to_datetime(final_df['start'])
+    # final_df = final_df.set_index('start')
+    # final_df.drop(['end'], axis=1, inplace=True)
+    # print(final_df)
+    # resampled_df = final_df.resample("1D").sum()
+    # print(resampled_df)
+    # # resampled_df.to_csv(r'Device_12_ecm_resampled_1D.csv')
+
+    path = ''
+    which_data = 'Device_12_ecm.csv'
+    data_dir = os.path.join(path, which_data)
+    df = pd.read_csv(data_dir, parse_dates=['start', 'end'])
+    df['index'] = df['start']
+    df = df.loc[:,['start','end','energy(J)','index']].set_index('index')
     print(df)
-    json_path = "./utils/user_config.json"
-    ev_obj = EV_mod(df, json_path)
-    df_ecm = ev_obj.data
-    print(df_ecm)
-    final_df = sum_energy(df_ecm, journey_start, journey_end)
-    final_df.to_csv(r'Device_12_ecm.csv')
-    print(final_df)
-    final_df['start'] = pd.to_datetime(final_df['start'])
-    final_df = final_df.set_index('start')
-    final_df.drop(['end'], axis=1, inplace=True)
-    print(final_df)
-    resampled_df = final_df.resample("1D").sum()
-    print(resampled_df)
-    resampled_df.to_csv(r'Device_12_ecm_resampled_1D.csv')
+    df = df.groupby(pd.Grouper(freq='1D')).agg({'start':'first','end':'last','energy(J)':'sum'})
+    df.to_csv(r'Device_12_ecm_resampled_1D_with_start_end.csv')
+    # print(df)

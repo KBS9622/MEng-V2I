@@ -32,11 +32,11 @@ class Simulation:
         self.start_next_day += pd.DateOffset(1)
         # call method run_recommendation_algorithm()
         recommended_slots = self.run_recommendation_algorithm()
+        # calls method calculate_cost_and_energy()
+        df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
         # sum the charge time allocated in each slot and charge with method charge()
         total_charge_time = sum(recommended_slots)
         self.ev_obj.charge(total_charge_time)
-        # calls method calculate_cost_and_energy()
-        df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
         # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
         print(
             f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
@@ -55,9 +55,22 @@ class Simulation:
         df_price_per_kwh = self.recommendation_obj.TOU_data.loc[time_to_grab]
         # concatenates allocated charging time and TOU prices into a new df variable
         df_price_and_time = pd.concat([time_slots_charging, df_price_per_kwh], axis=1)
-        # uses charger power to determine energy bought per slot and then calculate cost of buying that energy per slot
-        rated_charging_power = self.ev_obj.config_dict['Charger_power'] / 1000  # in kW
-        df_price_and_time["energy_per_time_slot (kWh)"] = (df_price_and_time['charging'] / 60) * rated_charging_power
+        # load the battery profile from csv
+        battery_profile = pd.read_csv(self.ev_obj.config_dict['EV_info']['Battery_profile'])
+        # get the index for the charge level value nearest to init_charge from the battery_profile df
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
+        for x in range(len(df_price_and_time)):
+            # iteratively go through all allocated slots and determine the energy bought within the time slot 
+            # from the initial charge level and the time spent charging in that timeslot
+            # find the amount of time allocated to charging in this timeslot, in seconds
+            charge_time_seconds = int(60*df_price_and_time['charging'].iloc[x])
+            # calculate the end index
+            end_idx = init_charge_idx + charge_time_seconds
+            # calculate the energy (in kWh) that would be bought (amount charged + loss) if the rest of the timeslot were to be allocated 
+            df_price_and_time.loc[df_price_and_time.index[x],"energy_per_time_slot (kWh)"] = (battery_profile.iloc[end_idx,-1] - battery_profile.iloc[init_charge_idx,-1])/(1000*(self.ev_obj.config_dict['Charger_efficiency']/100))
+            # update the inital charge index for next timeslot
+            init_charge_idx = end_idx
+
         df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * \
                                                       df_price_and_time['TOU']
 
