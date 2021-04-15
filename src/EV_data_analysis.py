@@ -213,7 +213,7 @@ class EV(object):
         charge_time_seconds = int(charge_time*60)
         init_charge = self.config_dict['Charge_level'] #in Wh
         # get the index for the charge level value nearest to init_charge from the battery_profile df
-        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(init_charge)).abs().argsort()[:1],-1].index.to_list()[0]
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(init_charge)).abs().argsort()[:1],-1].index.to_list()[0]
         # get the charge level value for the index (init_charge_idx + charge_time_seconds) from the battery_profile df
         expected_end_charge = battery_profile.iloc[(init_charge_idx+charge_time_seconds),-1]
         # there is no need to take into account of efficiency as the battery_profile has already taken that into account 

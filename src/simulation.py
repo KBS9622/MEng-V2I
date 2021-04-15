@@ -58,13 +58,13 @@ class Simulation:
         # load the battery profile from csv
         battery_profile = pd.read_csv(self.ev_obj.config_dict['EV_info']['Battery_profile'])
         # get the index for the charge level value nearest to init_charge from the battery_profile df
-        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
         # save to a new variable the charging time per timeslot in seconds (1 datapoint per second)
         charging_time_seconds = (df["charging"]*60).astype(int)
         # calculate the total charging time so that we know how many seconds of charging profile to get
         total_charge_time = sum(charging_time_seconds)
         # get the charger profile from the index of the initial charge to the initial charge index + the total charge time
-        new_df = pd.DataFrame(battery_profile['Power'].iloc[init_charge_idx:(init_charge_idx+total_charge_time)],columns=['Power'])
+        new_df = pd.DataFrame(battery_profile['Power'].iloc[init_charge_idx:(init_charge_idx+total_charge_time)]/(self.ev_obj.config_dict['Charger_efficiency']/100),columns=['Power'])
         print(new_df)
         # add the timeslot information for the 'power' column
         new_df['time_stamp'] = charging_time_seconds.loc[charging_time_seconds.index.repeat(charging_time_seconds)].index
@@ -94,7 +94,7 @@ class Simulation:
         # load the battery profile from csv
         battery_profile = pd.read_csv(self.ev_obj.config_dict['EV_info']['Battery_profile'])
         # get the index for the charge level value nearest to init_charge from the battery_profile df
-        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
+        init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
         for x in range(len(df_price_and_time)):
             # iteratively go through all allocated slots and determine the energy bought within the time slot 
             # from the initial charge level and the time spent charging in that timeslot

@@ -175,9 +175,9 @@ class charging_recommendation(object):
         if self.config_dict['Charge_level'] < charge_threshold:
 
             # get the index for the 'energy' value closest to the expected_initial_charge value as a reference index
-            nearest_start = battery_profile.iloc[(battery_profile['Charge_level']-self.config_dict['Charge_level']).abs().argsort()[:1],-1].index.to_list()[0]
+            nearest_start = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-self.config_dict['Charge_level']).abs().argsort()[:1],-1].index.to_list()[0]
             # get the index for the 'energy' value closest to the expected_charge value as a reference index
-            nearest_end = battery_profile.iloc[(battery_profile['Charge_level']-self.config_dict['EV_info']['Capacity']).abs().argsort()[:1],-1].index.to_list()[0]
+            nearest_end = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-self.config_dict['EV_info']['Capacity']).abs().argsort()[:1],-1].index.to_list()[0]
             # the time needed to charge up to the expected charge value from the expected initil charge value is just the difference of the index values, then convert from s to min
             charge_time = (nearest_end - nearest_start)/60
 
@@ -268,9 +268,9 @@ class charging_recommendation(object):
             # print('expected charge for {}: {} Wh'.format(start, expected_charge/3600))
 
             # get the index for the 'energy' value closest to the expected_initial_charge value as a reference index
-            nearest_start = battery_profile.iloc[(battery_profile['Charge_level']-(expected_initial_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+            nearest_start = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(expected_initial_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
             # get the index for the 'energy' value closest to the expected_charge value as a reference index
-            nearest_end = battery_profile.iloc[(battery_profile['Charge_level']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+            nearest_end = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
             # the time needed to charge up to the expected charge value from the expected initil charge value is just the difference of the index values, then convert from s to min
             charge_time = (nearest_end - nearest_start)/60
 
@@ -302,7 +302,7 @@ class charging_recommendation(object):
                 charge_time_seconds = int(charge_time*60)
                 # find the amount of energy that could be charged in this timeslot based on expected charge level after all previous charging allocations
                 # get the index for the 'energy' value closest to the expected charge value as a reference index
-                expected_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+                expected_charge_idx = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(expected_charge/3600)).abs().argsort()[:1],-1].index.to_list()[0]
                 # calculate the energy (in joules) that would be charged if the rest of the timeslot were to be allocated 
                 charge_for_timeslot = 3600*(battery_profile.iloc[(expected_charge_idx+charge_time_seconds),-1] - battery_profile.iloc[(expected_charge_idx),-1])
 
@@ -313,7 +313,7 @@ class charging_recommendation(object):
                 # if charging for the remainder of the slot WILL exceed upper limit, charge up to upper limit
                 else:
                     # get the index for the 'energy' value closest to the upper limit value as a reference index
-                    upper_limit_idx = battery_profile.iloc[(battery_profile['Charge_level']-(upper_limit/3600)).abs().argsort()[:1],-1].index.to_list()[0]
+                    upper_limit_idx = battery_profile.iloc[(battery_profile['Charge_level_based_on_SOC']-(upper_limit/3600)).abs().argsort()[:1],-1].index.to_list()[0]
                     charge_time = (upper_limit_idx - expected_charge_idx)/60
                     pred.loc[free_time_slots.iloc[[0]].index, 'charging'] = charge_time + remainder
                     expected_charge = upper_limit
