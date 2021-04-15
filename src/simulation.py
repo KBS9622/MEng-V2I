@@ -34,38 +34,50 @@ class Simulation:
         recommended_slots = self.run_recommendation_algorithm()
         # calls method calculate_cost_and_energy()
         df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
-        # saves the load profile for the allocated charge slots in a csv
-        self.load_profile(df_price_and_time)
-        # sum the charge time allocated in each slot and charge with method charge()
-        total_charge_time = sum(recommended_slots)
-        self.ev_obj.charge(total_charge_time)
-        # if there is any charging activity, print
+        # if there is any charging activity, print and save EV load profile
         if not df_price_and_time.empty:
+            # saves the load profile for the allocated charge slots in a csv
+            self.load_profile(df_price_and_time)
             # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
             print(
                 f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
             print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
             self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
             self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
+        # sum the charge time allocated in each slot and charge with method charge()
+        total_charge_time = sum(recommended_slots)
+        self.ev_obj.charge(total_charge_time)
         print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
 
     def load_profile(self, df):
+        """
+        grabs corresponding EV load profile from battery_profile 
+        based on the initial SOC/charge level and the total time allocated to charging
+        :return: Exports a csv
+        """
         # load the battery profile from csv
         battery_profile = pd.read_csv(self.ev_obj.config_dict['EV_info']['Battery_profile'])
         # get the index for the charge level value nearest to init_charge from the battery_profile df
         init_charge_idx = battery_profile.iloc[(battery_profile['Charge_level']-(self.ev_obj.config_dict['Charge_level'])).abs().argsort()[:1],-1].index.to_list()[0]
-        time_stamps = df.index
-        print(time_stamps)
+        # save to a new variable the charging time per timeslot in seconds (1 datapoint per second)
         charging_time_seconds = (df["charging"]*60).astype(int)
-        print(charging_time_seconds)
+        # calculate the total charging time so that we know how many seconds of charging profile to get
         total_charge_time = sum(charging_time_seconds)
+        # get the charger profile from the index of the initial charge to the initial charge index + the total charge time
         new_df = pd.DataFrame(battery_profile['Power'].iloc[init_charge_idx:(init_charge_idx+total_charge_time)],columns=['Power'])
-        new_df['time_stamp'] = charging_time_seconds.loc[charging_time_seconds.index.repeat(charging_time_seconds)].index
         print(new_df)
-        # temp = pd.DataFrame()
-        # for x in range(len(time_stamps)):
-
-
+        # add the timeslot information for the 'power' column
+        new_df['time_stamp'] = charging_time_seconds.loc[charging_time_seconds.index.repeat(charging_time_seconds)].index
+        # reset the index
+        new_df.reset_index(inplace=True)
+        if self.recommendation_obj.config_dict['Manual_override']:
+            mode = 'uncontrolled_'
+        else:
+            mode = 'IntelliCharga_'
+        # csv file names based on the day of charging
+        csv_name = mode+'EV_profile_for_'+str(self.start_next_day.date())+'.csv'
+        # export the df to csv
+        new_df.to_csv(csv_name)
 
 
     def calculate_cost_and_energy(self, time_slots_charging):

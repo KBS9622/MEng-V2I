@@ -87,7 +87,7 @@ tou_subdir = 'data/TOU_Data'
 json_path = "./utils/user_config.json"
 
 simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
-for x in range(0, 5):
+for x in range(0, 14):
     simulation_obj.plugged_in()
     simulation_obj.trigger_discharge()
 total_energy_bought = sum(simulation_obj.energy_bought)
