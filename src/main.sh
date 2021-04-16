@@ -3,7 +3,7 @@
 # Batch script to run a serial job under SGE.
 
 # Request 24 hours of wallclock time (format hours:minutes:seconds).
-#$ -l h_rt=24:00:0
+#$ -l h_rt=1:00:0
 
 # Request 1 terabyte of RAM (must be an integer followed by M, G, or T)
 #$ -l mem=1T
