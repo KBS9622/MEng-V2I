@@ -90,7 +90,7 @@ json_path = "./utils/user_config.json"
 saving_TOU_df = pd.DataFrame([])
 average_cost = []
 TOU_threshold = []
-Max_threshold = 10
+Max_threshold = 1
 increments = 0.25 #p/kWh
 temp = int(1/increments)
 
@@ -106,7 +106,7 @@ for TOU in range(0,(Max_threshold*temp)+1):
         json.dump(config_dict, f, indent=2)
 
     simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
-    for x in range(0, 77):
+    for x in range(0, 7):
         simulation_obj.plugged_in()
         simulation_obj.trigger_discharge()
     total_energy_bought = sum(simulation_obj.energy_bought)
