@@ -90,7 +90,7 @@ json_path = "./utils/user_config.json"
 saving_TOU_df = pd.DataFrame([])
 average_cost = []
 TOU_threshold = []
-Max_threshold = 8
+Max_threshold = 10
 increments = 0.25 #p/kWh
 temp = int(1/increments)
 
