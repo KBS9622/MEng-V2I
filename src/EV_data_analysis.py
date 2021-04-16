@@ -103,7 +103,8 @@ class EV(object):
                 print(EV_selection['vehicle_model'])
 
                 try:
-                    choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+                    # choice = int(input("""Please key in the number corresponding to the vehicle model : """))
+                    choice = 1
                     EV = EV_selection.iloc[choice]
                 except (IndexError, ValueError) as e:
                     print('Invalid input')

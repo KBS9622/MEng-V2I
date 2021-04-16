@@ -4,6 +4,7 @@ from TOU_analysis_and_prediction import TOU
 from charging_recommendation import charging_recommendation
 from pandas.tseries.offsets import DateOffset
 from simulation import Simulation
+import json
 pd.options.mode.chained_assignment = None
 ##########################################################################################
 
@@ -73,7 +74,7 @@ pd.options.mode.chained_assignment = None
 # charging_recom_obj.update_user_config(json_path)
 # print(charging_recom_obj.recommend())
 
-drive_cycle_file = 'Device12_formatted.csv'
+drive_cycle_file = 'Device12_formatted_filtered.csv'
 tou_file = 'full_data.csv'
 
 # for Windows
@@ -86,27 +87,47 @@ drive_cycle_subdir = 'data/yun_solution_drive_cycle'
 tou_subdir = 'data/TOU_Data'
 json_path = "./utils/user_config.json"
 
-simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
-for x in range(0, 14):
-    simulation_obj.plugged_in()
-    simulation_obj.trigger_discharge()
-total_energy_bought = sum(simulation_obj.energy_bought)
-energy_bought_df = simulation_obj.energy_bought.copy()
-energy_bought_df.append(total_energy_bought)
-total_energy_cost = sum(simulation_obj.energy_cost)
-energy_cost_df = simulation_obj.energy_cost
-energy_cost_df.append(total_energy_cost)
-print('energy bought : {}'.format(energy_bought_df))
-print('energy cost : {}'.format(energy_cost_df))
-print('Total deficit (error): ',simulation_obj.ev_obj.deficit)
+saving_TOU_df = pd.DataFrame([])
+average_cost = []
+TOU_threshold = []
+Max_threshold = 1
+increments = 0.25 #p/kWh
+temp = int(1/increments)
 
-# previous_ev_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-25 23:59:59'))
-# predicted_tou_data = simulation_obj.get_tou_data(start_time=pd.to_datetime('2019-09-25 00:00:00'), end_time=pd.to_datetime('2019-09-26 23:30:00'))
-# ev_consumption_data = simulation_obj.get_ev_data(start_time=pd.to_datetime('2019-09-26 00:00:00'), end_time=pd.to_datetime('2019-09-26 23:59:59'))
-# # recommendation_obj = charging_recommendation(ev_consumption_data, predicted_tou_data, previous_ev_data)
-# print(previous_ev_data.iloc[-1, :].name)
-# simulation_obj.tou_obj.time_idx_TOU_price.columns = ['TOU']
-# print(simulation_obj.tou_obj.time_idx_TOU_price.iloc[0,:])
-# print(hi)
-# TOU_data = predicted_tou_data.loc[previous_ev_data.iloc[-1, :].name:, :]
+for TOU in range(0,(Max_threshold*temp)+1):
+    with open(json_path) as f:
+        config_dict = json.load(f)
+    print(config_dict)
+    config_dict['Charge_level'] = 3760
+    config_dict['TOU_threshold'] = TOU * increments
+    TOU_threshold.append(TOU * increments)
+    print(config_dict)
+    with open(json_path, 'w') as f:
+        json.dump(config_dict, f, indent=2)
 
+    simulation_obj = Simulation(drive_cycle_file=drive_cycle_file, drive_cycle_subdir=drive_cycle_subdir, config_path=json_path, tou_file=tou_file, tou_subdir=tou_subdir, train_tou=False)
+    for x in range(0, 3):
+        simulation_obj.plugged_in()
+        simulation_obj.trigger_discharge()
+    total_energy_bought = sum(simulation_obj.energy_bought)
+    energy_bought_df = []#simulation_obj.energy_bought.copy()
+    energy_bought_df.append(total_energy_bought)
+    total_energy_cost = sum(simulation_obj.energy_cost)
+    energy_cost_df = []#simulation_obj.energy_cost
+    energy_cost_df.append(total_energy_cost)
+    total_charge_time_df = sum(simulation_obj.charge_time)
+    print('Total charge time : {}'.format(total_charge_time_df))
+    print('energy bought : {}'.format(energy_bought_df))
+    print('energy cost : {}'.format(energy_cost_df))
+    print('Total deficit (error): ',simulation_obj.ev_obj.deficit)
+    # simulation_obj.charging_schedule.to_csv('charging_schedule.csv')
+    average_energy_cost = total_energy_cost/total_energy_bought
+    print(average_energy_cost)
+    average_cost.append(average_cost)
+
+print(TOU_threshold)
+print(average_cost)
+print('fin')
+saving_TOU_df['TOU_threshold'] = TOU_threshold
+saving_TOU_df['Average_cost'] = average_cost
+saving_TOU_df.to_csv('TOU_vs_savings.csv')

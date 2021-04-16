@@ -282,7 +282,17 @@ class charging_recommendation(object):
             # exception handling
             if charge_time + sum(free_time_slots['charging']) > 30 * len(free_time_slots):
                 print('Not enough time slots to charge')
-                return None
+                # calculate how much time could be allocated for charging
+                charge_time = (30 * len(free_time_slots)) - sum(free_time_slots['charging'])
+                print('charging for : {} mins'.format(charge_time))
+                # allocate the timeslots
+                pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
+                # subtract journey time from charging time so that the df column only contains charging time
+                pred['charging'] -= pred['journey']
+                # save the column in the object df variable
+                self.predicted_EV_data['charging'] = pred['charging']
+
+                return pred.loc[pred['charging'] > 0, 'charging']
 
             pred = self.fill_in_timeslot(charge_time=charge_time, free_time_slots=free_time_slots, pred=pred)
 
@@ -327,3 +337,4 @@ class charging_recommendation(object):
         self.predicted_EV_data['charging'] = pred['charging']
 
         return pred.loc[pred['charging'] > 0, 'charging']
+

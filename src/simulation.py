@@ -13,10 +13,13 @@ class Simulation:
             self.tou_obj.create_and_fit_model()
         self.ev_obj = EV(drive_cycle_file, drive_cycle_subdir, config_path)
         self.config_path = config_path
-        self.beginning_of_time = pd.to_datetime('2019-10-07 00:00:00')
+        self.beginning_of_time = pd.to_datetime('2019-09-25 00:00:00')
         self.start_next_day = self.beginning_of_time
         self.energy_bought = []
         self.energy_cost = []
+        self.charge_time = []
+        self.charging_schedule = pd.DataFrame([])
+        self.days_skipped = 0
 
         # If plot needed columns to drop in format_ev_data needs to be edited
         self.ev_obj.data = self.format_ev_data(beginning_of_time=pd.to_datetime('2019-09-25 00:00:00'))
@@ -30,24 +33,37 @@ class Simulation:
         """
         # Add 1 day to start_next_day index
         self.start_next_day += pd.DateOffset(1)
-        # call method run_recommendation_algorithm()
-        recommended_slots = self.run_recommendation_algorithm()
-        # calls method calculate_cost_and_energy()
-        df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
-        # if there is any charging activity, print and save EV load profile
-        if not df_price_and_time.empty:
-            # saves the load profile for the allocated charge slots in a csv
-            self.load_profile(df_price_and_time)
-            # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
-            print(
-                f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
-            print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
-            self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
-            self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
-        # sum the charge time allocated in each slot and charge with method charge()
-        total_charge_time = sum(recommended_slots)
-        self.ev_obj.charge(total_charge_time)
-        print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
+        print(self.start_next_day.date())
+        if self.start_next_day.date() in self.ev_obj.data.index.date:
+            # call method run_recommendation_algorithm()
+            recommended_slots = self.run_recommendation_algorithm()
+            # calls method calculate_cost_and_energy()
+            df_price_and_time = self.calculate_cost_and_energy(recommended_slots)
+            # if there is any charging activity, print and save EV load profile
+            if not df_price_and_time.empty:
+                self.charging_schedule = self.charging_schedule.append(df_price_and_time)
+                # print(self.charging_schedule)
+                # saves the load profile for the allocated charge slots in a csv
+                self.load_profile(df_price_and_time)
+                # prints total energy bought for the session and the cost, then appends a list to keep track of charging sessions throughout simulation
+                # print(
+                #     f"The total energy bought for charging session is: {sum(df_price_and_time['energy_per_time_slot (kWh)'])} kWh ")
+                # print(f"The total cost for charging session is: {sum(df_price_and_time['cost_per_time_slot (p)'])} p ")
+                self.energy_bought.append(sum(df_price_and_time['energy_per_time_slot (kWh)']))
+                self.energy_cost.append(sum(df_price_and_time['cost_per_time_slot (p)']))
+                self.charge_time.append(sum(df_price_and_time['charging']))
+            # sum the charge time allocated in each slot and charge with method charge()
+            total_charge_time = sum(recommended_slots)
+            self.ev_obj.charge(total_charge_time)
+            print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
+            # if this loop condition is met, that means there is data for the day and it is not another inactive day
+            # therefore we need to reset the days_skipped counter
+            if self.days_skipped > 0:
+                self.days_skipped = 0
+        else:
+            print('Skipping ahead to next day\n')
+            self.days_skipped += 1
+            self.plugged_in()
 
     def load_profile(self, df):
         """
@@ -65,7 +81,6 @@ class Simulation:
         total_charge_time = sum(charging_time_seconds)
         # get the charger profile from the index of the initial charge to the initial charge index + the total charge time
         new_df = pd.DataFrame(battery_profile['Power'].iloc[init_charge_idx:(init_charge_idx+total_charge_time)]/(self.ev_obj.config_dict['Charger_efficiency']/100),columns=['Power'])
-        print(new_df)
         # add the timeslot information for the 'power' column
         new_df['time_stamp'] = charging_time_seconds.loc[charging_time_seconds.index.repeat(charging_time_seconds)].index
         # reset the index
@@ -77,7 +92,7 @@ class Simulation:
         # csv file names based on the day of charging
         csv_name = mode+'EV_profile_for_'+str(self.start_next_day.date())+'.csv'
         # export the df to csv
-        new_df.to_csv(csv_name)
+        # new_df.to_csv(csv_name)
 
 
     def calculate_cost_and_energy(self, time_slots_charging):
@@ -109,11 +124,7 @@ class Simulation:
             # update the inital charge index for next timeslot
             init_charge_idx = end_idx
 
-        # df_price_and_time["cost_per_time_slot (p)"] = df_price_and_time["energy_per_time_slot (kWh)"] * \
-        #                                               df_price_and_time['TOU']
-
-        print(df_price_and_time)
-        # total_cost_day = sum(df_price_and_time["cost_per_time_slot (p)"])
+        # print(df_price_and_time)
         return df_price_and_time
 
     def trigger_discharge(self):
@@ -134,7 +145,7 @@ class Simulation:
         # print(yesterdays_ev_data)
 
         total_energy = yesterdays_ev_data['P_total'].sum()
-        print(total_energy)
+        # print(total_energy)
 
         # converts the sum from above to Wh and removes battery charging efficiency to SHOW how many Wh to deduct
         # from battery (as P_total accounts for both battery efficiencies)
@@ -179,7 +190,7 @@ class Simulation:
         """
         start_time = self.start_next_day
         end_time = self.start_next_day + pd.offsets.Hour(24) - pd.offsets.Second(1)
-        previous_start_time = start_time - pd.DateOffset(1)
+        previous_start_time = start_time - pd.DateOffset(1+self.days_skipped)
         previous_end_time = end_time - pd.DateOffset(1)
         # if recommendation object already exist
         if self.recommendation_obj:
@@ -190,7 +201,7 @@ class Simulation:
                                                                  end_time=previous_end_time))
             # determine the end range of TOU feed in
             tou_end_time = self.recommendation_obj.charging_time_start.replace(hour=23, minute=30, second=0) + \
-                           pd.DateOffset(1)
+                           pd.DateOffset(1+self.days_skipped)
             # calls method 'set_TOU_data' to update future TOU prices
             self.recommendation_obj.set_TOU_data(self.get_tou_data(
                 start_time=self.recommendation_obj.charging_time_start,
