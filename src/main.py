@@ -90,7 +90,7 @@ json_path = "./utils/user_config.json"
 saving_TOU_df = pd.DataFrame([])
 average_cost = []
 TOU_threshold = []
-Max_threshold = 11
+Max_threshold = 0
 increments = 0.25 #p/kWh
 temp = int(1/increments)
 
@@ -120,11 +120,11 @@ for TOU in range(0,(Max_threshold*temp)+1):
     print('energy bought : {}'.format(energy_bought_df))
     print('energy cost : {}'.format(energy_cost_df))
     print('Total deficit (error): ',simulation_obj.ev_obj.deficit)
-    # simulation_obj.charging_schedule.to_csv('charging_schedule.csv')
-    average_energy_cost = total_energy_cost/total_energy_bought
-    average_cost.append(average_energy_cost)
+    simulation_obj.charging_schedule.to_csv('charging_schedule.csv')
+    # average_energy_cost = total_energy_cost/total_energy_bought
+    # average_cost.append(average_energy_cost)
 
 
-saving_TOU_df['TOU_threshold'] = TOU_threshold
-saving_TOU_df['Average_cost'] = average_cost
-saving_TOU_df.to_csv('TOU_vs_savings.csv')
+# saving_TOU_df['TOU_threshold'] = TOU_threshold
+# saving_TOU_df['Average_cost'] = average_cost
+# saving_TOU_df.to_csv('TOU_vs_savings.csv')

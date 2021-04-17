@@ -92,7 +92,7 @@ class Simulation:
         # csv file names based on the day of charging
         csv_name = mode+'EV_profile_for_'+str(self.start_next_day.date())+'.csv'
         # export the df to csv
-        # new_df.to_csv(csv_name)
+        new_df.to_csv(csv_name)
 
 
     def calculate_cost_and_energy(self, time_slots_charging):
