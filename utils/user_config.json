@@ -1,8 +1,8 @@
 {
   "User_ID": "00000001",
   "_comment": "EV given parameters",
-  "SOC": 19.999825545907303,
-  "Charge_level": 3759.9672026305734,
+  "SOC": 42.18967770548177,
+  "Charge_level": 7931.659408630573,
   "_comment2": "User defined parameter",
   "Charger_power": 3000,
   "TOU_threshold": 0.0,
@@ -17,7 +17,7 @@
     "Capacity": 18800,
     "Battery_profile": "BMW_i3_battery_profile_L2.csv"
   },
-  "Manual_override": false,
+  "Manual_override": true,
   "System_consideration_span": 24,
   "Utilities_info": {
     "Supplier": "Octopus Energy",

@@ -20,6 +20,9 @@ class Simulation:
         self.charge_time = []
         self.charging_schedule = pd.DataFrame([])
         self.days_skipped = 0
+        # to keep track of final SOC after charging
+        self.final_SOC = []
+        self.initial_SOC = []
 
         # If plot needed columns to drop in format_ev_data needs to be edited
         self.ev_obj.data = self.format_ev_data(beginning_of_time=pd.to_datetime('2019-09-25 00:00:00'))
@@ -56,6 +59,7 @@ class Simulation:
             total_charge_time = sum(recommended_slots)
             self.ev_obj.charge(total_charge_time)
             print('Charge level at end of plugged_in',self.ev_obj.config_dict['Charge_level'])
+            self.final_SOC.append(self.ev_obj.config_dict['Charge_level']/self.ev_obj.config_dict['EV_info']['Capacity'])
             # if this loop condition is met, that means there is data for the day and it is not another inactive day
             # therefore we need to reset the days_skipped counter
             if self.days_skipped > 0:
@@ -156,6 +160,7 @@ class Simulation:
         # Note: the method below uses 'total_energy' instead of the variable 'power' that was calculated above
         self.ev_obj.discharge(total_energy)
         print('Charge level at end of trigger_discharge',self.ev_obj.config_dict['Charge_level'])
+        self.initial_SOC.append(self.ev_obj.config_dict['Charge_level']/self.ev_obj.config_dict['EV_info']['Capacity'])
 
     def create_recommendation_obj(self):
         """

@@ -123,6 +123,10 @@ for TOU in range(0,(Max_threshold*temp)+1):
     simulation_obj.charging_schedule.to_csv('charging_schedule.csv')
     # average_energy_cost = total_energy_cost/total_energy_bought
     # average_cost.append(average_energy_cost)
+    pd.DataFrame(simulation_obj.initial_SOC).to_csv('init_SOC.csv')
+    pd.DataFrame(simulation_obj.final_SOC).to_csv('final_SOC.csv')
+
+
 
 
 # saving_TOU_df['TOU_threshold'] = TOU_threshold
