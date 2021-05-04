@@ -1,0 +1,1 @@
+python main.py --network 'lstm' --transfer_learning True --mode 'test'

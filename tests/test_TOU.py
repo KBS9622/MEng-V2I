@@ -8,7 +8,7 @@ test_dir = os.path.dirname(os.path.realpath(__file__))
 main_dir = os.path.dirname(os.path.normpath(test_dir))
 sys.path.insert(0, main_dir)
 
-from TOU_analysis_and_prediction import TOU
+from src.TOU_analysis_and_prediction import TOU
 
 class TOU_tests(unittest.TestCase):
 
